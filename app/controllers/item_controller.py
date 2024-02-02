@@ -18,19 +18,19 @@ class JSONEncoder(json.JSONEncoder):
 class ItemController:
 
     @staticmethod
-    def get_all():
+    def find_many():
         list = ItemService.find_many()
         return JSONEncoder().encode(list)
     
     @staticmethod
-    def get(id):
+    def find_by_id(id):
         obj = ItemService.find_by_id(id)
         if obj:
             return JSONEncoder().encode(obj)
         return jsonify({'error': 'Item not found'}), 404
 
     @staticmethod
-    def add():
+    def  create():
         data = request.get_json()
         name = data.get('name')
         if name:
@@ -39,7 +39,7 @@ class ItemController:
         return jsonify({'error': 'Invalid data'}), 400
 
     @staticmethod
-    def update(id):
+    def update_by_id(id):
         data = request.get_json()
         updated = ItemService.update_by_id(id, data)
         if updated:
@@ -47,7 +47,7 @@ class ItemController:
         return jsonify({'error': 'Not updated'}), 404
 
     @staticmethod
-    def delete(id):
+    def delete_by_id(id):
         deleted = ItemService.delete_by_id(id)
         if deleted:
             return jsonify({'message': 'Item deleted successfully'})
