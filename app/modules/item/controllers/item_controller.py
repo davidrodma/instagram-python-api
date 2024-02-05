@@ -1,26 +1,16 @@
 # app/controllers/item_controller.py
 from flask import jsonify, request
-from app.services.item_service import ItemService
-import json
+from app.modules.item.services.item_service import ItemService
+from app.common.controllers.controller import Controller
+from app.common.utilities.paginate import Paginate
+from app.common.utilities.json_enconder import JSONEncoder
 
-from bson.objectid import ObjectId
-# Codificador personalizado para converter ObjectId para string
-class JSONEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, object):
-            # Convertendo o ObjectId para string
-            obj_dict = obj.__dict__.copy()
-            if isinstance(obj_dict.get('_id'), ObjectId):
-                obj_dict['_id'] = str(obj_dict['_id'])
-            return obj_dict
-        return super().default(obj)
-
-class ItemController:
-
+class ItemController(Controller):
+    
     @staticmethod
-    def find_many():
-        list = ItemService.find_many()
-        return JSONEncoder().encode(list)
+    def paginate():
+        paginated = ItemService.paginate({}, Paginate.get_request_options())
+        return JSONEncoder().encode(paginated)
     
     @staticmethod
     def find_by_id(id):
@@ -30,7 +20,7 @@ class ItemController:
         return jsonify({'error': 'Item not found'}), 404
 
     @staticmethod
-    def  create():
+    def create():
         data = request.get_json()
         name = data.get('name')
         if name:
@@ -52,3 +42,11 @@ class ItemController:
         if deleted:
             return jsonify({'message': 'Item deleted successfully'})
         return jsonify({'error': 'Item not found'}), 404
+    
+    @staticmethod
+    def status(id):
+        data = request.get_json()
+        updated = ItemService.status(data.get('ids'), data.get('status'))
+        if updated:
+            return jsonify({'message': 'Item updated successfully'})
+        return jsonify({'error': 'Not updated'}), 404

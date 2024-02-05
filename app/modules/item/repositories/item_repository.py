@@ -1,7 +1,6 @@
 # app/services/item_service.py
-from app.repositories.repository import Repository
-from app.models.item import Item
-from typing import Type,List, TypeVar, cast
+from app.database.repositories.repository import Repository
+from app.modules.item.models.item import Item
 
 class ItemRepository(Repository):
     

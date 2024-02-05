@@ -1,5 +1,5 @@
 
-from app.repositories.mongo_repository import MongoRepository
+from app.database.repositories.mongo_repository import MongoRepository
 
 class Repository(MongoRepository):
     
