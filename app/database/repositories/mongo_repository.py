@@ -6,10 +6,9 @@ from dotenv import load_dotenv
 import math
 import os
 from app.common.types.paginate_options import PaginateOptions
+from app.common.types.id import ID
 
 load_dotenv()
-
-ID = TypeVar('ID', str, ObjectId)
 class MongoRepository:
     
     def __init__(self, collection_name:str, model:object):
@@ -58,7 +57,7 @@ class MongoRepository:
             ids = [ids]
         ids = [ObjectId(id) for id in ids]
         return self.update_many({
-            '_id': {'in': ids}
+            '_id': {'$in': ids}
         },
         data)
 
@@ -78,7 +77,7 @@ class MongoRepository:
             ids = [ids]
         ids = [ObjectId(id) for id in ids]
         return self.delete_many({
-            '_id': {'in': ids}
+            '_id': {'$in': ids}
         })
     
     def count(self, filter:dict = {}):

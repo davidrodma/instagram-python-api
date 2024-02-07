@@ -1,8 +1,14 @@
 import json
 from bson.objectid import ObjectId
+from datetime import datetime
+from pydantic import BaseModel
 
 class JSONEncoder(json.JSONEncoder):
     def default(self, obj):
+        if(isinstance(obj,BaseModel)):
+            return obj.model_dump(mode = 'json')
+        if isinstance(obj, datetime):
+            return obj.isoformat()
         if isinstance(obj, object):
             # Convertendo o ObjectId para string
             obj_dict = obj.__dict__.copy()

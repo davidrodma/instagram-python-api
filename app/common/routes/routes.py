@@ -1,7 +1,7 @@
 # app/main.py
 from flask import Flask
 from app.common.controllers.controller import Controller
-from app.modules.item.controllers.item_controller import ItemController
+from app.modules.item import ItemController
 
 class Routes:
     def __init__(self,app:Flask):
