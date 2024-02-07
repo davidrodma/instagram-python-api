@@ -1,15 +1,10 @@
 # app/models/item.py
 from datetime import datetime
 from typing import  Optional
-from app.common.types.model import Model
-from pydantic import Field
+from pydantic import BaseModel
 
-
-class Item(Model):
+class ItemCreateDto(BaseModel):
     name: str
     description: Optional[str] = ''
     create_at: Optional[datetime] = datetime.utcnow()
     status: int = 1
-
-
-    

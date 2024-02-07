@@ -1,11 +1,12 @@
 # app/models/item.py
+from app.common.types.id import ID
+# app/models/item.py
 from datetime import datetime
-from typing import  Optional
-from app.common.types.model import Model
 
-
-class Item(Model):
-    name: str
-    description: Optional[str] = ''
-    create_at: Optional[datetime] = datetime.utcnow()
-    status: int = 1
+class Item:
+    def __init__(self, **data):
+        self._id:ID = data.get('_id')
+        self.name:str = data.get('name')
+        self.description:str = data.get('description')
+        self.create_at:datetime = data.get('create_at') if data.get('create_at') else datetime.utcnow()
+        self.status:int = int(data.get('status')) if data.get('status') else 1

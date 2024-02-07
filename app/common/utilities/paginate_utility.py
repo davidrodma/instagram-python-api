@@ -2,7 +2,7 @@
 from flask import request
 from app.common.types.paginate_options import PaginateOptions
 
-class Paginate:
+class PaginateUtility:
    
    @staticmethod
    def get_request_options():        

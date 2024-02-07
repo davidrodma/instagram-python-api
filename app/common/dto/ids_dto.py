@@ -2,7 +2,9 @@
 from pydantic import BaseModel
 from typing import List,Union
 
-class StatusDto(BaseModel):    
+class IdsDto(BaseModel):    
     ids:Union[List[str], str]
-    status:int
-    
+
+
+class IdDto(BaseModel):    
+    ids:str
