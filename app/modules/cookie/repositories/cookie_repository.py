@@ -1,10 +1,10 @@
 from app.database.repositories.repository import Repository
-from app.modules.item.models.item import Item
+from app.modules.cookie.models.cookie import Cookie
 
-class ItemRepository(Repository):
+class CookieRepository(Repository):
     
     repository:Repository
 
     def __init__(self):
        self.repository = super()
-       self.repository.__init__('items',Item)
+       self.repository.__init__('cookies',Cookie)

@@ -9,6 +9,8 @@ class JSONEncoder(json.JSONEncoder):
             return obj.model_dump(mode = 'json')
         if isinstance(obj, datetime):
             return obj.isoformat()
+        if isinstance(obj,ObjectId):
+            return str(obj)
         if isinstance(obj, object):
             # Convertendo o ObjectId para string
             obj_dict = obj.__dict__.copy()
