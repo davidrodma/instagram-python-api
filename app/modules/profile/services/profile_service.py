@@ -5,6 +5,7 @@ from app.modules.profile.models.profile import Profile
 from typing import List,Iterable
 from app.common.types.paginate_options import PaginateOptions
 from app.common.types.id import ID
+
 class ProfileService:
 
     repository = ProfileRepository()
@@ -72,3 +73,7 @@ class ProfileService:
     @classmethod
     def paginate(self,filter={},options: PaginateOptions = {'page':1,'limit':100}):
         return self.repository.paginate(filter,options)
+    
+    @classmethod
+    def get_random_profile(self)->Profile:
+        return self.repository.get_one_random({"status":1})

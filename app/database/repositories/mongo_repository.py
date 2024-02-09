@@ -7,6 +7,7 @@ import math
 import os
 from app.common.types.paginate_options import PaginateOptions
 from app.common.types.id import ID
+import random
 
 load_dotenv()
 class MongoRepository:
@@ -19,6 +20,9 @@ class MongoRepository:
             self.model = model
         except Exception as e:
             raise BaseException(e,'MongoRepository.__init__')
+    
+    def get_collection(self):
+         return self.collection
     
     def find_many(self,filter:dict=None):
         try:
@@ -152,3 +156,8 @@ class MongoRepository:
             }
         except Exception as e:
             raise BaseException(e,'paginate')
+        
+    def get_one_random(self,filter:dict = {}):
+        count = self.count()
+        random_number = random.randint(0, count - 1)
+        return self.collection.find(filter).skip(random_number)

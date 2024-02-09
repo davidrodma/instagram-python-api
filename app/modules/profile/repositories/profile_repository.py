@@ -1,5 +1,6 @@
 from app.database.repositories.repository import Repository
 from app.modules.profile.models.profile import Profile
+import random
 
 class ProfileRepository(Repository):
     
