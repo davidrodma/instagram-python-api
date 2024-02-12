@@ -1,5 +1,3 @@
-# app/services/profile_service.py
-
 from app.modules.profile.repositories.profile_repository import ProfileRepository
 from app.modules.profile.models.profile import Profile
 from typing import List,Iterable
@@ -76,4 +74,10 @@ class ProfileService:
     
     @classmethod
     def get_random_profile(self)->Profile:
-        return self.repository.get_one_random({"status":1})
+        try:
+            obj =  self.repository.get_one_random({"status":1})
+            if not obj:
+                raise BaseException("no profile!")
+            return obj
+        except Exception as e:
+             raise BaseException(f'get_random_profile: {e}')

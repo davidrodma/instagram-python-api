@@ -8,5 +8,5 @@ class Item:
         self._id:ID = data.get('_id')
         self.name:str = data.get('name')
         self.description:str = data.get('description')
-        self.create_at:datetime = data.get('create_at') if data.get('create_at') else datetime.utcnow()
-        self.status:int = int(data.get('status')) if data.get('status') else 1
+        self.create_at:datetime = data.get('create_at')
+        self.status:int = data.get('status')

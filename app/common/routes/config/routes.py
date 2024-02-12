@@ -3,6 +3,7 @@ from flask import Flask
 from app.modules.item.controllers.item_controller import ItemController
 from app.modules.profile.controllers.profile_controller import ProfileController
 from app.modules.cookie.controllers.cookie_controller import CookieController
+from app.modules.instagram.controllers.instagram_scrape_controller import InstagramScrapeController
 from app.common.routes.services.route_service import RouteService
 
 class Routes:
@@ -20,3 +21,6 @@ class Routes:
 
         #Cookies
         self.service.create_default_routes(app,'cookies',CookieController)
+
+        #Instagram
+        app.add_url_rule('/instagram/user-info', 'instagram.user_info', InstagramScrapeController.user_info, methods=['GET'])

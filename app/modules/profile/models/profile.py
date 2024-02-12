@@ -30,8 +30,8 @@ class Profile:
         self.pausedAtLike:datetime = data.get('pausedAtLike') if data.get('pausedAtLike') else None
         self.pausedAtComment:datetime = data.get('pausedAtComment') if data.get('pausedAtComment') else None
         self.pausedAtStory:datetime = data.get('pausedAtStory') if data.get('pausedAtStory') else None
-        self.createdAt:datetime = data.get('createdAt') if data.get('createdAt') else datetime.utcnow()
-        self.status:int = int(data.get('status')) if data.get('status') else 1
+        self.createdAt:datetime = data.get('createdAt')
+        self.status:int = data.get('status')
         
 
 

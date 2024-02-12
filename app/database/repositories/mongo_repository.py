@@ -19,7 +19,7 @@ class MongoRepository:
             self.collection = self.db[collection_name]
             self.model = model
         except Exception as e:
-            raise BaseException(e,'MongoRepository.__init__')
+            raise BaseException(f'MongoRepository.__init__: {e}')
     
     def get_collection(self):
          return self.collection
@@ -30,7 +30,7 @@ class MongoRepository:
             listParsed =  [self.model(**obj)  for obj in objects]
             return cast(List[self.model],listParsed)
         except Exception as e:
-            raise BaseException(e,'find_many')
+            raise BaseException(f'find_many: {e}')
 
     def find_first(self, filter: dict):
         try:
@@ -38,27 +38,27 @@ class MongoRepository:
             objParsed = self.model(**object) if object else None
             return cast(self.model,objParsed)
         except Exception as e:
-            raise BaseException(e,'find_first')
+            raise BaseException(f'find_first: {e}')
     
     def find_by_id(self,id:ID):
         try:
             return self.find_first({'_id': ObjectId(id)})
         except Exception as e:
-            raise BaseException(e,"find")
+            raise BaseException(f"find: {e}")
 
     def create(self, data: dict):
         try:
             result = self.collection.insert_one(data)
             return str(result.inserted_id)
         except Exception as e:
-            raise BaseException(e,'create')
+            raise BaseException(f'create: {e}')
     
     def create_many(self, data: Iterable[dict]):
         try:
             result = self.collection.insert_many(data)
             return result.inserted_ids
         except Exception as e:
-            raise BaseException(e,'create_many')
+            raise BaseException(f'create_many: {e}')
 
     def update(self, filter:dict, data: dict):
         try:
@@ -66,14 +66,14 @@ class MongoRepository:
             result = self.collection.update_one(filter,update_data)
             return result.modified_count
         except Exception as e:
-            raise BaseException(e,'update')
+            raise BaseException(f'update: {e}')
     
     def update_by_id(self, id:ID, data: dict):
         try:
             query = {'_id': ObjectId(id)}
             return self.update(query, data)
         except Exception as e:
-            raise BaseException(e,'update_by_id')
+            raise BaseException(f'update_by_id: {e}')
     
     def update_many(self,filter:dict, data: dict):
         try:
@@ -81,7 +81,7 @@ class MongoRepository:
             result = self.collection.update_many(filter,update_data)
             return result.modified_count
         except Exception as e:
-            raise BaseException(e,'update_many')
+            raise BaseException(f'update_many: {e}')
     
     def update_many_by_ids(self, ids:Union[List[ID], ID], data: dict):
         try:
@@ -93,27 +93,27 @@ class MongoRepository:
             },
             data)
         except Exception as e:
-            raise BaseException(e,'update_many_by_ids')
+            raise BaseException(f'update_many_by_ids: {e}')
 
     def delete(self, filter:dict):
         try:
             result = self.collection.delete_one(filter)
             return result.deleted_count
         except Exception as e:
-            raise BaseException(e,'delete')
+            raise BaseException(f'delete: {e}')
     
     def delete_by_id(self, id:ID):
         try:
             return self.delete({'_id': ObjectId(id)})
         except Exception as e:
-            raise BaseException(e,'delete_by_id')
+            raise BaseException(f'delete_by_id: {e}')
     
     def delete_many(self, filter:dict):
         try:
             result = self.collection.delete_many(filter)
             return result.deleted_count
         except Exception as e:
-            raise BaseException(e,'delete_many')
+            raise BaseException(f'delete_many: {e}')
     
     def delete_many_by_ids(self, ids:Union[List[ID], ID]):
         try:
@@ -124,20 +124,20 @@ class MongoRepository:
                 '_id': {'$in': ids}
             })
         except Exception as e:
-            raise BaseException(e,'delete_many_by_ids')
+            raise BaseException(f'delete_many_by_ids: {e}')
     
     def count(self, filter:dict = {}):
         try:
             count = self.collection.count_documents(filter)
             return count
         except Exception as e:
-            raise BaseException(e,'count')
+            raise BaseException(f'count: {e}')
     
     def status(self, ids:Union[List[ID], ID], status:int):
         try:
             return self.update_many_by_ids(ids,{'status':status})
         except Exception as e:
-            raise BaseException(e,'status')
+            raise BaseException(f'status: {e}')
     
     def paginate(self, filter:dict = {}, options:PaginateOptions = {'page':1,'limit':100}):
         try:
@@ -155,9 +155,15 @@ class MongoRepository:
                 'list':listParsed,
             }
         except Exception as e:
-            raise BaseException(e,'paginate')
+            raise BaseException(f'paginate: {e}')
         
     def get_one_random(self,filter:dict = {}):
-        count = self.count()
-        random_number = random.randint(0, count - 1)
-        return self.collection.find(filter).skip(random_number)
+        try:
+            count = self.count(filter)
+            if not count:
+                return None
+            random_number = random.randint(0, count - 1)
+            objects = self.collection.find(filter).skip(random_number).limit(1)
+            return cast(self.model,self.model(**objects[0])) if objects[0] else None 
+        except Exception as e:
+            raise BaseException(f'get_one_random: {e}')

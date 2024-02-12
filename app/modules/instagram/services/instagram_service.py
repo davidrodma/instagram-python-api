@@ -13,14 +13,16 @@ class InstagramService:
         Attempts to login to Instagram using either the provided session information
         or the provided username and password.
         """
-
+        print('login_custom',username)
         cl = Client()
+        cl.delay_range = [1, 3]
         try:
             session = cl.load_settings(f"{username}.json")
         except:
             session = None
 
         if proxy:
+            print('use proxy')
             cl.set_proxy(proxy)
 
         login_via_session = False
@@ -63,32 +65,35 @@ class InstagramService:
         return cl
     
     def get_user_info(self,cl: Client, username:str = '', pk=''):
-        if pk=='':
+        if not pk:
             try:
+                print ('get user info by username', username)
                 user = cl.user_info_by_username(username)
             except Exception as e:
-                message_error = f"getUserInfo->ig.user.usernameInfo {e} user extract: {cl.username} proxy {cl.proxy}"
+                message_error = f"get_user_info->user_info_by_username  {e} user extract: {cl.username} proxy {cl.proxy}"
                 logger.info(message_error)
                 raise Exception(message_error)
-            logger.info(f"Username information received: {username} {user.pk}")
             return user
         
         try:
+            print ('get user info by pk', username)
             user = cl.user_info(pk)
         except Exception as e:
-            message_error = f"getUserInfo->ig.user.info  {e} user extract: {cl.username} proxy {cl.proxy}"
+            message_error = f"get_user_info->user_info  {e} user extract: {cl.username} proxy {cl.proxy}"
             logger.info(message_error)
             raise Exception(message_error)
         
         logger.info("Username information received: %s %s" % user.username,user.pk)
         return user
     
-    def user_info_by_username(self,username):
+    def get_user_info_by_username(self,username):
+        print('random')
         profile = ProfileService.get_random_profile()
+        print("username",profile.username)
         cl = self.login_custom(profile.username,profile.password)
         return self.get_user_info(cl,username)
     
-    def user_info_by_id(self,pk):
+    def get_user_info_by_id(self,pk):
         profile = ProfileService.get_random_profile()
         cl = self.login_custom(profile.username,profile.password)
         return self.get_user_info(cl,pk=pk)
@@ -101,7 +106,3 @@ class InstagramService:
         print(f"Before: {before_ip}")
         print(f"After: {after_ip}")
         return before_ip!=after_ip
-        
-
-ig = InstagramService()
-print(ig.user_info_by_username("anitta"))
