@@ -12,59 +12,60 @@ from app.modules.cookie.dto.cookie_create_dto import CookieCreateDto
 from app.modules.cookie.dto.cookie_update_dto import CookieUpdateDto
 
 class CookieController(Controller):
-    service = CookieService
-    @staticmethod
-    def paginate():
+    service = CookieService()
+
+    @classmethod
+    def paginate(self):
         try:
-            paginated = CookieService.paginate({}, PaginateUtility.get_request_options())
+            paginated =self.service.paginate({}, PaginateUtility.get_request_options())
             return JSONEncoder().encode(paginated)
         except Exception as e:
             return ExceptionUtility.catch_response(e,'Error Paginate')
     
-    @staticmethod
-    def find_by_id(id):
+    @classmethod
+    def find_by_id(self,id):
         try:
-            obj = CookieService.find_by_id(id)
+            obj =self.service.find_by_id(id)
             return JSONEncoder().encode(obj) if obj else (jsonify({'error': 'Record not found'}), 404)
         except BaseException as e:
             return ExceptionUtility.catch_response(e,'Error Get')
 
-    @staticmethod
-    def create():
+    @classmethod
+    def create(self):
         try:
             dto = CookieCreateDto(**request.get_json())
-            id = CookieService.create(dto.model_dump())
+            id =self.service.create(dto.model_dump())
             return jsonify({'id': id})
         except ValidationError as e:
             return ExceptionUtility.catch_response_validation(e)
         except Exception as e:
              return ExceptionUtility.catch_response(e,'Error Create')
     
-    @staticmethod
-    def update_by_id(id):
+    @classmethod
+    def update_by_id(self,id):
         try:
             dto = CookieUpdateDto(_id=id,**request.get_json())
-            modified_count = CookieService.update_by_id(id, dto.model_dump(exclude_unset=True))
+            modified_count =self.service.update_by_id(id, dto.model_dump(exclude_unset=True))
             return jsonify({'message': f'{modified_count} records successfully updated!','success': True})
         except ValidationError as e:
             return ExceptionUtility.catch_response_validation(e)
         except Exception as e:
             return ExceptionUtility.catch_response(e,'Error Update')
     
-    @staticmethod
-    def delete_many_by_ids():
+    @classmethod
+    def delete_many_by_ids(self):
         try:
             dto = IdsDto(**request.get_json())
-            deleted_count = CookieService.delete_many_by_ids(dto.ids)
+            deleted_count =self.service.delete_many_by_ids(dto.ids)
             return jsonify({'message': f'{deleted_count} records successfully deleted!','success': True})
         except Exception as e:
             return ExceptionUtility.catch_response(e,'Error Delete')
         
-    @staticmethod
-    def status():
+    @classmethod
+    def status(self):
         try:
             dto = StatusDto(**request.get_json())
-            modified_count = CookieService.status(dto.ids, dto.status)
+            modified_count =self.service.status(dto.ids, dto.status)
             return jsonify({'message': f'{modified_count} records updated successfully','success': True})
         except Exception as e:
              return ExceptionUtility.catch_response(e,'Error Status')

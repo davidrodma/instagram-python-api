@@ -8,3 +8,4 @@ class CookieCreateDto(Model):
     pk: Optional[str] = ''
     state: str
     createdAt: Optional[datetime] = datetime.utcnow()
+    updatedAt: Optional[datetime] = None

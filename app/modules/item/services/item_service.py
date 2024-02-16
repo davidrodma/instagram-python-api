@@ -5,12 +5,14 @@ from app.modules.item.models.item import Item
 from typing import List,Iterable
 from app.common.types.paginate_options import PaginateOptions
 from app.common.types.id import ID
+
+model = Item
 class ItemService:
 
     repository = ItemRepository()
     
     @classmethod
-    def find_many(self,filter = None)->List[Item]:
+    def find_many(self,filter = None)->List[model]:
         return self.repository.find_many(filter)
     
     @classmethod
@@ -18,7 +20,7 @@ class ItemService:
         return self.repository.find_first(filter)
     
     @classmethod
-    def find_by_id(self, id:ID)->Item:
+    def find_by_id(self, id:ID)->model:
         return self.repository.find_by_id(id)
     
     @classmethod

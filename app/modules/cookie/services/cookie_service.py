@@ -5,6 +5,9 @@ from app.modules.cookie.models.cookie import Cookie
 from typing import List,Iterable
 from app.common.types.paginate_options import PaginateOptions
 from app.common.types.id import ID
+from datetime import datetime
+import json
+
 class CookieService:
 
     repository = CookieRepository()
@@ -68,3 +71,43 @@ class CookieService:
     @classmethod
     def paginate(self,filter={},options: PaginateOptions = {'page':1,'limit':100}):
         return self.repository.paginate(filter,options)
+    
+    def get_by_username_or_pk(self,username:str='',pk:str=''):
+        cookie:Cookie = None
+        if not pk and not username: 
+            return cookie
+        if pk:
+            cookie = self.repository.find_first({"pk":pk})
+        return cookie if cookie else self.repository.find_first({"username":username})
+
+    def load_state(self,username:str,pk:str=''):
+        cookie = self.get_by_username_or_pk(username,pk)
+        return json.loads(cookie.state) if cookie else None
+    
+    def save_state(self,
+        username:str,
+        state:dict,
+        pk:str = ''
+    ):
+      cookie = self.get_by_username_or_pk(username,pk)
+      stateStr = json.dumps(state)
+      if cookie:
+          self.update_by_id(cookie._id,{
+            "state":stateStr,
+            "username":username,
+            "updatedAt":  datetime.utcnow()
+          })
+      else:
+          self.create({
+              "username":username,
+              "pk":pk,
+              "state":stateStr,
+              "createdAt":datetime.utcnow()
+          })
+
+    def remove_by_username(self,username):
+        self.repository.delete_many({
+            "username":username
+        })
+
+    

@@ -7,26 +7,26 @@ class Controller(ABC):
    # def mandatory_method(self):
    #    pass
 
-   @staticmethod
+   @classmethod
    def paginate(self)->Dict[str, Any]:
       pass
    
-   @staticmethod
+   @classmethod
    def find_by_id(self,id:ID)->Dict[str, Any]:
       pass
 
-   @staticmethod
+   @classmethod
    def create(self)->Dict[str, Any]:
       pass
 
-   @staticmethod
+   @classmethod
    def update_by_id(self,id:ID)->Dict[str, Any]:
       pass
 
-   @staticmethod
+   @classmethod
    def delete_many_by_ids(self)->Dict[str, Any]:
       pass
 
-   @staticmethod
+   @classmethod
    def status(self)->Dict[str, Any]:
       pass

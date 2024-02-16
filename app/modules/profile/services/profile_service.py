@@ -14,7 +14,7 @@ class ProfileService:
     
     @classmethod
     def find_fist(self, filter:dict)->Profile:
-        return self.repository.find_first(filter)
+        return self.model(self.repository.find_first(filter))
     
     @classmethod
     def find_by_id(self, id:ID)->Profile:
