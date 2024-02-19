@@ -4,6 +4,10 @@ from app.modules.profile.services.profile_service import ProfileService
 from app.modules.cookie.services.cookie_service import CookieService
 from app.common.utilities.logging_utility import LoggingUtility
 from app.modules.instagram.services.instagrapi_challenge_service import InstagrapiChallengeService
+from app.modules.instagram.services.instagrapi_profile_service import InstagrapiProfileService
+
+from flask import Flask
+app = Flask(__name__)
 
 logger = LoggingUtility.get_logger("InstagrapiApiService")
 
@@ -90,6 +94,31 @@ class InstagrapiApiService:
         logger.info(f"Logged in {cl.username} { 'via password' if login_via_pw else 'via session'}")
         return cl
     
+    def type_extract_by_port():
+         port =  app.config.get('SERVER_PORT')
+         switch = {
+            5011: "extract",
+            5012: "worker",
+            5013: "worker",
+         }
+         return switch.get(port, "extract")
+        
+
+    def login_extract(self):
+        cl = Client()
+        type = self.type_extract_by_port()
+        if 'worker'==type:
+            raise Exception("Not implement")
+        elif 'boost'==type:
+            raise Exception("Not implement")
+        else:
+            try:
+                profile = ProfileService.get_random_profile()
+                cl = InstagrapiProfileService.login(profile,True)
+            except Exception as e:
+                raise Exception(f"loginExtract->login: {e}")
+        return cl
+
     def get_user_info(self,cl: Client, username:str = '', pk=''):
         if not pk:
             try:

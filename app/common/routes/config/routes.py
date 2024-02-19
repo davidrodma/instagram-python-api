@@ -4,6 +4,7 @@ from app.common.routes.services.route_service import RouteService
 from app.common.controllers.test_controller import TestController
 from app.modules.item.controllers.item_controller import ItemController
 from app.modules.profile.controllers.profile_controller import ProfileController
+from app.modules.proxy.controllers.proxy_controller import ProxyController
 from app.modules.cookie.controllers.cookie_controller import CookieController
 from app.modules.instagram.controllers.instagram_scrape_controller import InstagramScrapeController
 
@@ -18,6 +19,10 @@ class Routes:
         #Items
         self.service.create_default_routes(app,'items',ItemController)
 
+        #Proxies
+        app.add_url_rule('/proxies/create-many', 'proxies.create_many', ProxyController.create_many, methods=['POST'])
+        self.service.create_default_routes(app,'proxies',ProxyController)
+
         #Profiles
         app.add_url_rule('/profiles/create-many', 'profiles.create_many', ProfileController.create_many, methods=['POST'])
         self.service.create_default_routes(app,'profiles',ProfileController)
@@ -27,3 +32,4 @@ class Routes:
 
         #Instagram
         app.add_url_rule('/instagram/user-info', 'instagram.user_info', InstagramScrapeController.user_info, methods=['GET'])
+        

@@ -17,7 +17,7 @@ class InstagramService:
             proxy=proxy,
             verification_mode=verification_mode,
             return_ig_error=return_ig_error)
-    
+  
     def get_user_info_by_username(self,username):
         return self.api.get_user_info_by_username(username)
     
