@@ -1,42 +1,35 @@
-# app/services/item_service.py
-
-from app.modules.item.repositories.item_repository import ItemRepository
-from app.modules.item.models.item import Item
-from typing import List,Iterable
+from app.modules.config.repositories.config_repository import ConfigRepository
+from app.modules.config.models.config import Config
+from typing import List
 from app.common.types.paginate_options import PaginateOptions
 from app.common.types.id import ID
 
-model = Item
-class ItemService:
+class ConfigService:
 
-    repository = ItemRepository()
+    repository = ConfigRepository()
     
     @classmethod
-    def find_many(self,filter = None)->List[model]:
+    def find_many(self,filter = None)->List[Config]:
         return self.repository.find_many(filter)
     
     @classmethod
-    def find_fist(self, filter:dict)->Item:
-        return self.repository.find_first(filter)
+    def find_one(self, filter:dict)->Config:
+        return self.repository.find_one(filter)
     
     @classmethod
-    def find_by_id(self, id:ID)->model:
+    def find_by_id(self, id:ID)->Config:
         return self.repository.find_by_id(id)
     
     @classmethod
-    def create(self, data:Item):
+    def create(self, data:Config):
         return self.repository.create(data)
-    
-    @classmethod
-    def create_many(self, data: Iterable[dict]):
-        return self.repository.create_many(data)
     
     @classmethod
     def update(self,filter:dict, data: dict):
         return self.repository.update(filter,data)
 
     @classmethod
-    def update_by_id(self, id:ID, data: Item):
+    def update_by_id(self, id:ID, data: Config):
         return self.repository.update_by_id(id, data)
     
     @classmethod
@@ -70,3 +63,17 @@ class ItemService:
     @classmethod
     def paginate(self,filter={},options: PaginateOptions = {'page':1,'limit':100}):
         return self.repository.paginate(filter,options)
+    
+    @classmethod
+    def get_by_name(self,name:str)->Config:
+        return self.repository.find_one({"name":name})
+    
+    @classmethod
+    def get_config_actived(self,name:str)->Config:
+        config:Config = self.repository.find_one({"name":name,"status":1})
+        return config if config and config.value else None
+    
+    @classmethod
+    def get_config_value(self,name:str)->Config:
+        config:Config = self.get_config_actived(name)
+        return config.value if config and config.value else None

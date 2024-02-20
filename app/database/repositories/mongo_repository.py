@@ -1,5 +1,6 @@
 # app/repository/mongo_repository.py
 from pymongo import MongoClient
+from pymongo import ReturnDocument
 from bson.objectid import ObjectId
 from typing import List, cast,Iterable,Union
 from dotenv import load_dotenv
@@ -32,17 +33,17 @@ class MongoRepository:
         except Exception as e:
             raise BaseException(f'find_many: {e}')
 
-    def find_first(self, filter: dict):
+    def find_one(self, filter: dict):
         try:
             object = self.collection.find_one(filter)
             objParsed = self.model(**object) if object else None
             return cast(self.model,objParsed)
         except Exception as e:
-            raise BaseException(f'find_first: {e}')
+            raise BaseException(f'find_one: {e}')
     
     def find_by_id(self,id:ID):
         try:
-            return self.find_first({'_id': ObjectId(id)})
+            return self.find_one({'_id': ObjectId(id)})
         except Exception as e:
             raise BaseException(f"find: {e}")
 
@@ -59,6 +60,15 @@ class MongoRepository:
             return result.inserted_ids
         except Exception as e:
             raise BaseException(f'create_many: {e}')
+        
+    def find_one_and_update(self,filter:dict, data: dict,return_document=ReturnDocument.AFTER):
+        try:
+            update_data = {'$set': data}
+            object = self.collection.find_one_and_update(filter=filter,update=update_data,return_document=return_document)
+            objParsed = self.model(**object) if object else None
+            return cast(self.model,objParsed)
+        except Exception as e:
+            raise BaseException(f"find_one_and_update: {e}")
 
     def update(self, filter:dict, data: dict):
         try:

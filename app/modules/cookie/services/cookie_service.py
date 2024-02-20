@@ -17,8 +17,8 @@ class CookieService:
         return self.repository.find_many(filter)
     
     @classmethod
-    def find_fist(self, filter:dict)->Cookie:
-        return self.repository.find_first(filter)
+    def find_one(self, filter:dict)->Cookie:
+        return self.repository.find_one(filter)
     
     @classmethod
     def find_by_id(self, id:ID)->Cookie:
@@ -77,8 +77,8 @@ class CookieService:
         if not pk and not username: 
             return cookie
         if pk:
-            cookie = self.repository.find_first({"pk":pk})
-        return cookie if cookie else self.repository.find_first({"username":username})
+            cookie = self.repository.find_one({"pk":pk})
+        return cookie if cookie else self.repository.find_one({"username":username})
 
     def load_state(self,username:str,pk:str=''):
         cookie = self.get_by_username_or_pk(username,pk)

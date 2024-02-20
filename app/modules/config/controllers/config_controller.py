@@ -1,4 +1,3 @@
-# app/controllers/item_controller.py
 from flask import jsonify, request
 from app.common.controllers.controller import Controller
 from app.common.utilities.paginate_utility import PaginateUtility
@@ -7,15 +6,13 @@ from pydantic import ValidationError
 from app.common.dto.status_dto import StatusDto
 from app.common.dto.ids_dto import IdsDto
 from app.common.utilities.exception_utility import ExceptionUtility
-from app.modules.item.services.item_service import ItemService
-from app.modules.item.dto.item_create_dto import ItemCreateDto
-from app.modules.item.dto.item_update_dto import ItemUpdateDto
+from app.modules.config.services.config_service import ConfigService
+from app.modules.config.dto.config_create_dto import ConfigCreateDto
+from app.modules.config.dto.config_update_dto import ConfigUpdateDto
 
-class ItemController(Controller):
-    service = ItemService()
-    create_dto = ItemCreateDto
-    update_dto = ItemUpdateDto
-
+class ConfigController(Controller):
+    service = ConfigService()
+    
     @classmethod
     def paginate(self):
         try:
@@ -35,7 +32,7 @@ class ItemController(Controller):
     @classmethod
     def create(self):
         try:
-            dto = self.create_dto(**request.get_json())
+            dto = ConfigCreateDto(**request.get_json())
             id = self.service.create(dto.model_dump())
             return jsonify({'id': id})
         except ValidationError as e:
@@ -46,7 +43,7 @@ class ItemController(Controller):
     @classmethod
     def update_by_id(self,id):
         try:
-            dto =  self.update_dto(_id=id,**request.get_json())
+            dto = ConfigUpdateDto(_id=id,**request.get_json())
             modified_count = self.service.update_by_id(id, dto.model_dump(exclude_unset=True))
             return jsonify({'message': f'{modified_count} records successfully updated!','success': True})
         except ValidationError as e:
