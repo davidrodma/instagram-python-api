@@ -60,10 +60,13 @@ class MongoRepository:
             return result.inserted_ids
         except Exception as e:
             raise BaseException(f'create_many: {e}')
-        
+    
+    def has_custom_set(data: dict):
+        return any(key.startswith('$set') for key in data.keys())
+
     def find_one_and_update(self,filter:dict, data: dict,return_document=ReturnDocument.AFTER):
         try:
-            update_data = {'$set': data}
+            update_data = data if self.has_custom_set(data) else {'$set': data}
             object = self.collection.find_one_and_update(filter=filter,update=update_data,return_document=return_document)
             objParsed = self.model(**object) if object else None
             return cast(self.model,objParsed)
@@ -72,7 +75,7 @@ class MongoRepository:
 
     def update(self, filter:dict, data: dict):
         try:
-            update_data = {'$set': data}
+            update_data = data if self.has_custom_set(data) else {'$set': data}
             result = self.collection.update_one(filter,update_data)
             return result.modified_count
         except Exception as e:
@@ -87,7 +90,7 @@ class MongoRepository:
     
     def update_many(self,filter:dict, data: dict):
         try:
-            update_data = {'$set': data}
+            update_data = data if self.has_custom_set(data) else {'$set': data}
             result = self.collection.update_many(filter,update_data)
             return result.modified_count
         except Exception as e:

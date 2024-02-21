@@ -93,31 +93,6 @@ class InstagrapiApiService:
         
         logger.info(f"Logged in {cl.username} { 'via password' if login_via_pw else 'via session'}")
         return cl
-    
-    def type_extract_by_port():
-         port =  app.config.get('SERVER_PORT')
-         switch = {
-            5011: "extract",
-            5012: "worker",
-            5013: "worker",
-         }
-         return switch.get(port, "extract")
-        
-
-    def login_extract(self):
-        cl = Client()
-        type = self.type_extract_by_port()
-        if 'worker'==type:
-            raise Exception("Not implement")
-        elif 'boost'==type:
-            raise Exception("Not implement")
-        else:
-            try:
-                profile = ProfileService.get_random_profile()
-                cl = InstagrapiProfileService.login(profile,True)
-            except Exception as e:
-                raise Exception(f"loginExtract->login: {e}")
-        return cl
 
     def get_user_info(self,cl: Client, username:str = '', pk=''):
         if not pk:
@@ -161,3 +136,11 @@ class InstagrapiApiService:
         print(f"Before: {before_ip}")
         print(f"After: {after_ip}")
         return before_ip!=after_ip
+    
+    def delete_memory_session(self,type:str,username:str):
+        if   type == "worker":
+            pass
+        elif type == "boost":
+            pass
+        else:
+            InstagrapiProfileService.delete_memory_session(username)

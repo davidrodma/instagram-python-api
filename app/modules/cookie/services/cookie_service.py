@@ -35,6 +35,10 @@ class CookieService:
     @classmethod
     def update(self,filter:dict, data: dict):
         return self.repository.update(filter,data)
+    
+    @classmethod
+    def find_one_and_update(self,filter:dict, data: dict)->Cookie:
+        return self.repository.find_one_and_update(filter,data)
 
     @classmethod
     def update_by_id(self, id:ID, data: Cookie):

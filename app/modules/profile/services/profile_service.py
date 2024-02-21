@@ -5,6 +5,8 @@ from app.common.types.paginate_options import PaginateOptions
 from app.common.types.id import ID
 from datetime import datetime
 from app.modules.config.services.config_service import ConfigService
+from app.modules.instagram.utilities.instagram_utility import InstagramUtility
+from app.modules.instagram.services.instagram_service import InstagramService
 
 class ProfileService:
 
@@ -118,18 +120,16 @@ class ProfileService:
             )
 
             if profile and disable_few_minutes > 0 and profile.countFewMinutes >= disable_few_minutes:
-                await ProfileController.disable(profile.get('username'), f"disable error because config disable-few-minutes: {error}")
+                await self.disable(profile.get('username'), f"disable error because config disable-few-minutes: {error}")
 
             return profile
 
         except Exception as e:
             print('checkCountFewMinutes', e)
             raise f'checkCountFewMinutes: {e}'
-        
 
-    import datetime
-
-    async def disable(username: str, reason: str = ''):
+    @classmethod
+    async def disable(self,username: str, reason: str = ''):
         try:
             print('disable', username)
             date = datetime.utcnow()
@@ -141,17 +141,24 @@ class ProfileService:
                 'pausedAtComment': date
             }
             if reason:
-                expire_at = CommonAccount.get_expire_at(reason)
+                expire_at = InstagramUtility.get_expire_at(reason)
                 update.update({
                     'noteError': reason,
                     'expireAt': expire_at,
                     '$inc': {'countError': 1}
                 })
-            if profiles_ig.get(username):
-                ig = profiles_ig[username]
-                await CookieManager.refresh(ig)
-                del profiles_ig[username]
-            return await Profile.update_many({'username': username}, update)
+            InstagramService.delete_memory_session(username)
+            return await self.update_many({'username': username}, update)
         except Exception as e:
             print('disable', e)
             raise f'disable: {e}'
+
+    @classmethod
+    async def note_error(self,username: str, message: str):
+        await self.find_one_and_update(
+            {'username': username},
+            {'$set': {'noteError': message}, '$inc': {'countError': 1}}
+        )  
+    
+
+

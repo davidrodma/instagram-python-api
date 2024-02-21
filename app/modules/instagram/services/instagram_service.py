@@ -17,7 +17,10 @@ class InstagramService:
             proxy=proxy,
             verification_mode=verification_mode,
             return_ig_error=return_ig_error)
-  
+    
+    async def delete_memory_session(self,type:str,username: str):
+        self.api.delete_memory_session(type,username)
+
     def get_user_info_by_username(self,username):
         return self.api.get_user_info_by_username(username)
     
@@ -26,3 +29,4 @@ class InstagramService:
 
     def test_proxy(self,proxy:str):
         return self.api.test_proxy(proxy)
+    
