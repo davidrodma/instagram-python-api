@@ -1,8 +1,8 @@
-from app.modules.instagram.services.instagrapi_api_service import InstagrapiApiService
+from app.modules.instagram.api.instagrapi.instagrapi_api import InstagrapiApi
 
 class InstagramService:
     
-    api = InstagrapiApiService()
+    api = InstagrapiApi()
 
     def login_custom(self,
         username:str,
@@ -17,6 +17,9 @@ class InstagramService:
             proxy=proxy,
             verification_mode=verification_mode,
             return_ig_error=return_ig_error)
+    
+    def user_info(self,username:str):
+        return self.api.user_info(username)
     
     async def delete_memory_session(self,type:str,username: str):
         self.api.delete_memory_session(type,username)

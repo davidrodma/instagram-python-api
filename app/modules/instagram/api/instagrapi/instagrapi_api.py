@@ -3,16 +3,18 @@ from instagrapi.exceptions import LoginRequired
 from app.modules.profile.services.profile_service import ProfileService
 from app.modules.cookie.services.cookie_service import CookieService
 from app.common.utilities.logging_utility import LoggingUtility
-from app.modules.instagram.services.instagrapi_challenge_service import InstagrapiChallengeService
-from app.modules.instagram.services.instagrapi_profile_service import InstagrapiProfileService
+from app.modules.instagram.api.instagrapi.instagrapi_challenge import InstagrapiChallenge
+from app.modules.instagram.api.instagrapi.instagrapi_profile import InstagrapiProfile
+from app.modules.instagram.api.instagrapi.instagrapi_extract import InstagrapiExtract
 
 from flask import Flask
 app = Flask(__name__)
 
 logger = LoggingUtility.get_logger("InstagrapiApiService")
 
-class InstagrapiApiService:
+class InstagrapiApi:
     cookie_service = CookieService()
+    instagrapi_extract = InstagrapiExtract()
     def login_custom(self,username:str,password:str,proxy:str='',verification_mode:str='',return_ig_error:bool=False):
         """
         Attempts to login to Instagram using either the provided session information
@@ -56,14 +58,14 @@ class InstagrapiApiService:
                     try:
                         cl.login(username, password)
                     except Exception as e: 
-                        name_challenge = InstagrapiChallengeService.detect_name_challenge(e)
+                        name_challenge = InstagrapiChallenge.detect_name_challenge(e)
                         raise Exception(f"login by login_via_session required {name_challenge} {e}")
                 login_via_session = True
                 #cl.dump_settings(f"{username}.json")
                 self.cookie_service.save_state(username=username,state=cl.get_settings(),pk=cl.user_id)
                 logger.warning(f'Cookies updated')
             except Exception as e:
-                name_challenge = InstagrapiChallengeService.detect_name_challenge(e)
+                name_challenge = InstagrapiChallenge.detect_name_challenge(e)
                 message_error = f"login by login_via_session username {username} {proxy} {name_challenge}->  Couldn't login user using session information: {e}"
                 logger.error(message_error)
 
@@ -77,14 +79,14 @@ class InstagrapiApiService:
                     try:
                         cl.get_timeline_feed()
                     except Exception as e:
-                        name_challenge = InstagrapiChallengeService.detect_name_challenge(e)
+                        name_challenge = InstagrapiChallenge.detect_name_challenge(e)
                         raise Exception(f"login by login_via_session->get_timeline_feed() {name_challenge} {e}")
                     login_via_pw = True
                     #cl.dump_settings(f"{username}.json")
                     self.cookie_service.save_state(username=username,state=cl.get_settings(),pk=cl.user_id)
                     logger.warning(f'Cookies created')
             except Exception as e:
-                name_challenge = InstagrapiChallengeService.detect_name_challenge(e)
+                name_challenge = InstagrapiChallenge.detect_name_challenge(e)
                 message_error = f"login by login_via_pw ->  Couldn't login user using username {username} and pw, {proxy} {name_challenge}: {e}"
                 logger.error(message_error)
         
@@ -127,6 +129,12 @@ class InstagrapiApiService:
         profile = ProfileService.get_random_profile()
         cl = self.login_custom(profile.username,profile.password)
         return self.get_user_info(cl,pk=pk)
+    
+    def user_info(self,username:str):
+        try:
+            return self.instagrapi_extract.user_info_extract(username=username)
+        except Exception as e:
+            raise Exception(f"instagrapi.user_info: {e}")
 
     def test_proxy(self,proxy:str):
         cl = Client()
@@ -143,4 +151,5 @@ class InstagrapiApiService:
         elif type == "boost":
             pass
         else:
-            InstagrapiProfileService.delete_memory_session(username)
+            InstagrapiProfile.delete_memory_session(username)
+

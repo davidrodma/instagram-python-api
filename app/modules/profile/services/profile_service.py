@@ -159,6 +159,36 @@ class ProfileService:
             {'username': username},
             {'$set': {'noteError': message}, '$inc': {'countError': 1}}
         )  
+
+    @classmethod
+    async def increment_count(self,username: str, quantity: int, type: str = '') -> dict:
+        try:
+            update = {
+                'countUsed': quantity,
+            }
+            if type and type in ['follower', 'like', 'comment']:
+                update[f'countCurrent{type.capitalize()}'] = quantity
+
+            profile = await self.find_one_and_update(
+                {'username': username},
+                {'$inc': update},
+                new=True
+            )
+
+            return profile
+        except Exception as e:
+            print('incrementCount', e)
+            raise f"incrementCount: {e}"
+
+    @classmethod  
+    async def update_count(self,username: str, quantity: int, type: str = '') -> None:
+        try:
+            profile = await self.increment_count(username, quantity, type)
+            return profile
+        except Exception as e:
+            raise f"Profile->updateCount {username}: {e}"
+
+
     
 
 

@@ -3,8 +3,7 @@ from app.modules.profile.services.profile_service import ProfileService
 from app.modules.proxy.services.proxy_service import ProxyService
 from app.modules.config.services.config_service import ConfigService
 from app.modules.cookie.services.cookie_service import CookieService
-from app.modules.instagram.services.instagrapi_api_service import InstagrapiApiService
-from app.modules.instagram.services.instagram_service import InstagrapiApiService
+from app.modules.instagram.api.instagrapi.instagrapi_api import InstagrapiApi
 from app.modules.instagram.utilities.instagram_utility import InstagramUtility
 from instagrapi import Client
 from flask import Flask
@@ -13,12 +12,12 @@ import asyncio
 
 app = Flask(__name__)
 
-class InstagrapiProfileService:
+class InstagrapiProfile:
     service = ProfileService()
     proxy_service = ProxyService()
     config_service = ConfigService()
     cookie_service = CookieService()
-    api = InstagrapiApiService()
+    api = InstagrapiApi()
     profiles_cl: Dict[str, Client]
 
     @classmethod
@@ -110,32 +109,7 @@ class InstagrapiProfileService:
         
         print('END LOGIN --------------------------------')
         return cl
-    
 
-    def type_extract_by_port():
-         port =  app.config.get('SERVER_PORT')
-         switch = {
-            5011: "extract",
-            5012: "worker",
-            5013: "boost",
-         }
-         return switch.get(port, "extract")
-        
-
-    def login_extract(self):
-        cl = Client()
-        type = self.type_extract_by_port()
-        if 'worker'==type:
-            raise Exception("Not implement")
-        elif 'boost'==type:
-            raise Exception("Not implement")
-        else:
-            try:
-                profile = self.service.get_random_profile()
-                cl = self.login(profile,True)
-            except Exception as e:
-                raise Exception(f"loginExtract->login: {e}")
-        return cl
     
     async def delete_memory_session(self,username: str):
         try:

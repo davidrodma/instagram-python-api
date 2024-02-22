@@ -9,7 +9,7 @@ from instagrapi.exceptions import (
 def json_value():
     return ''
 
-class InstagrapiChallengeService:
+class InstagrapiChallenge:
 
     @classmethod
     def detect_name_challenge(e):

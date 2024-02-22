@@ -15,7 +15,7 @@ class InstagramScrapeController(Controller):
     def user_info(self):
         try:
             dto = UsernameDto(**request.get_json())
-            info = self.service.get_user_info_by_username(dto.username)
+            info = self.service.user_info(dto.username)
             return JSONEncoder().encode(info)
         except BaseException as e:
             return ExceptionUtility.catch_response(e,f'Error Get')
