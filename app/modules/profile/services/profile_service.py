@@ -5,8 +5,6 @@ from app.common.types.paginate_options import PaginateOptions
 from app.common.types.id import ID
 from datetime import datetime
 from app.modules.config.services.config_service import ConfigService
-from app.modules.instagram.utilities.instagram_utility import InstagramUtility
-from app.modules.instagram.services.instagram_service import InstagramService
 
 class ProfileService:
 
@@ -127,31 +125,6 @@ class ProfileService:
         except Exception as e:
             print('checkCountFewMinutes', e)
             raise f'checkCountFewMinutes: {e}'
-
-    @classmethod
-    async def disable(self,username: str, reason: str = ''):
-        try:
-            print('disable', username)
-            date = datetime.utcnow()
-            update = {
-                'status': 0,
-                'disabledAt': date,
-                'pausedAtFollower': date,
-                'pausedAtLike': date,
-                'pausedAtComment': date
-            }
-            if reason:
-                expire_at = InstagramUtility.get_expire_at(reason)
-                update.update({
-                    'noteError': reason,
-                    'expireAt': expire_at,
-                    '$inc': {'countError': 1}
-                })
-            InstagramService.delete_memory_session(username)
-            return await self.update_many({'username': username}, update)
-        except Exception as e:
-            print('disable', e)
-            raise f'disable: {e}'
 
     @classmethod
     async def note_error(self,username: str, message: str):

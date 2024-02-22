@@ -3,11 +3,11 @@ from app.modules.profile.services.profile_service import ProfileService
 from app.modules.proxy.services.proxy_service import ProxyService
 from app.modules.config.services.config_service import ConfigService
 from app.modules.cookie.services.cookie_service import CookieService
-from app.modules.instagram.api.instagrapi.instagrapi_api import InstagrapiApi
 from app.modules.instagram.utilities.instagram_utility import InstagramUtility
 from instagrapi import Client
 from flask import Flask
 import asyncio
+from datetime import datetime
 
 
 app = Flask(__name__)
@@ -17,10 +17,12 @@ class InstagrapiProfile:
     proxy_service = ProxyService()
     config_service = ConfigService()
     cookie_service = CookieService()
-    api = InstagrapiApi()
     profiles_cl: Dict[str, Client]
+    
+    def __init__(self,api):
+        self.api = api
+ 
 
-    @classmethod
     async def login(self,profile: Optional[Dict[str, Union[str, Dict[str, Any]]]] = None, random_after_error: bool = False):
         logged = False
         random = True if profile is None else False
@@ -161,7 +163,7 @@ class InstagrapiProfile:
             if InstagramUtility.is_error_session(message_error):
                 await self.clean_session(cl.username)
             if InstagramUtility.is_error_prevent_action(message_error):
-                await self.service.disable(cl.username, f"errorHandling: {message_error}")
+                await self.disable(cl.username, f"errorHandling: {message_error}")
             else:
                 await self.service.note_error(cl.username, f"errorHandling: {message_error}")
         return cl
@@ -180,6 +182,31 @@ class InstagrapiProfile:
         except Exception as e:
             print('clean_session', e)
             raise f'clean_session: {e}'
+        
+
+    async def disable(self,username: str, reason: str = ''):
+        try:
+            print('disable', username)
+            date = datetime.utcnow()
+            update = {
+                'status': 0,
+                'disabledAt': date,
+                'pausedAtFollower': date,
+                'pausedAtLike': date,
+                'pausedAtComment': date
+            }
+            if reason:
+                expire_at = InstagramUtility.get_expire_at(reason)
+                update.update({
+                    'noteError': reason,
+                    'expireAt': expire_at,
+                    '$inc': {'countError': 1}
+                })
+            self.delete_memory_session(username)
+            return await self.service.update_many({'username': username}, update)
+        except Exception as e:
+            print('disable', e)
+            raise f'disable: {e}'
         
 
 

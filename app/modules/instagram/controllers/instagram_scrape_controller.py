@@ -12,10 +12,10 @@ class InstagramScrapeController(Controller):
     service = InstagramService()
 
     @classmethod
-    def user_info(self):
+    async def user_info(self):
         try:
             dto = UsernameDto(**request.get_json())
-            info = self.service.user_info(dto.username)
+            info = await self.service.user_info(dto.username)
             return JSONEncoder().encode(info)
         except BaseException as e:
             return ExceptionUtility.catch_response(e,f'Error Get')

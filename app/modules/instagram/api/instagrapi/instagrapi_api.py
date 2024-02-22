@@ -6,6 +6,7 @@ from app.common.utilities.logging_utility import LoggingUtility
 from app.modules.instagram.api.instagrapi.instagrapi_challenge import InstagrapiChallenge
 from app.modules.instagram.api.instagrapi.instagrapi_profile import InstagrapiProfile
 from app.modules.instagram.api.instagrapi.instagrapi_extract import InstagrapiExtract
+import asyncio
 
 from flask import Flask
 app = Flask(__name__)
@@ -14,7 +15,11 @@ logger = LoggingUtility.get_logger("InstagrapiApiService")
 
 class InstagrapiApi:
     cookie_service = CookieService()
-    instagrapi_extract = InstagrapiExtract()
+    
+    def __init__(self):
+        self.instagrapi_extract = InstagrapiExtract(self)
+        self.instagrapi_profile = InstagrapiProfile(self)
+
     def login_custom(self,username:str,password:str,proxy:str='',verification_mode:str='',return_ig_error:bool=False):
         """
         Attempts to login to Instagram using either the provided session information
@@ -130,11 +135,11 @@ class InstagrapiApi:
         cl = self.login_custom(profile.username,profile.password)
         return self.get_user_info(cl,pk=pk)
     
-    def user_info(self,username:str):
+    async def user_info(self,username:str):
         try:
-            return self.instagrapi_extract.user_info_extract(username=username)
+            return await self.instagrapi_extract.user_info_extract(username=username)
         except Exception as e:
-            raise Exception(f"instagrapi.user_info: {e}")
+            raise BaseException(f"instagrapi_api.user_info.user_info_extract: {e}")
 
     def test_proxy(self,proxy:str):
         cl = Client()
@@ -151,5 +156,5 @@ class InstagrapiApi:
         elif type == "boost":
             pass
         else:
-            InstagrapiProfile.delete_memory_session(username)
+           self.instagrapi_profile.delete_memory_session(username)
 

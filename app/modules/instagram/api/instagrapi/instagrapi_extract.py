@@ -1,6 +1,5 @@
 from instagrapi import Client
 from flask import Flask
-from app.modules.instagram.api.instagrapi.instagrapi_api import InstagrapiApi
 from app.modules.instagram.api.instagrapi.instagrapi_profile import InstagrapiProfile
 from app.modules.profile.services.profile_service import ProfileService
 from app.modules.instagram.utilities.instagram_utility import InstagramUtility
@@ -8,12 +7,14 @@ from app.modules.instagram.utilities.instagram_utility import InstagramUtility
 app = Flask(__name__)
 
 class InstagrapiExtract:
-    instagrapi_profile = InstagrapiProfile()
+    
     profile_service = ProfileService()
-    api = InstagrapiApi
-    utils = InstagrapiApi
 
-    def type_extract_by_port():
+    def __init__(self,api):
+        self.api = api
+        self.instagrapi_profile = InstagrapiProfile(api)
+
+    def type_extract_by_port(self):
          port =  app.config.get('SERVER_PORT')
          switch = {
             5011: "extract",
@@ -27,15 +28,15 @@ class InstagrapiExtract:
         cl = Client()
         type = self.type_extract_by_port()
         if 'worker'==type:
-            raise Exception("Not implement")
+            raise BaseException("Not implement")
         elif 'boost'==type:
-            raise Exception("Not implement")
+            raise BaseException("Not implement")
         else:
             try:
                 profile = self.profile_service.get_random_profile()
                 cl = self.instagrapi_profile.login(profile,True)
             except Exception as e:
-                raise Exception(f"loginExtract->login: {e}")
+                raise BaseException(f"loginExtract->login: {e}")
         return cl
     
     async def user_info_extract(self,username:str = '', pk: str ='', noImage: bool = False) -> dict:
@@ -66,11 +67,11 @@ class InstagrapiExtract:
                     message_error = str(err)
                     await self.instagrapi_profile.error_handling(cl, message_error)
                     if attempts <= 0:
-                        raise err
+                        raise BaseException(message_error)
                     success = False
 
             return info
         except Exception as e:
             print('I')
             message_error = str(e)
-            raise message_error
+            raise BaseException(message_error)

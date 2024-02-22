@@ -1,5 +1,5 @@
 from app.modules.instagram.api.instagrapi.instagrapi_api import InstagrapiApi
-
+import asyncio
 class InstagramService:
     
     api = InstagrapiApi()
@@ -18,8 +18,8 @@ class InstagramService:
             verification_mode=verification_mode,
             return_ig_error=return_ig_error)
     
-    def user_info(self,username:str):
-        return self.api.user_info(username)
+    async def user_info(self,username:str):
+        return await self.api.user_info(username)
     
     async def delete_memory_session(self,type:str,username: str):
         self.api.delete_memory_session(type,username)
