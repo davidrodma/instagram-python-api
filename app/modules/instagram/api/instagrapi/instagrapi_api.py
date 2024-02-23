@@ -21,6 +21,7 @@ class InstagrapiApi:
         self.instagrapi_profile = InstagrapiProfile(self)
 
     def login_custom(self,username:str,password:str,proxy:str='',verification_mode:str='',return_ig_error:bool=False):
+        print("login_custom")
         """
         Attempts to login to Instagram using either the provided session information
         or the provided username and password.
@@ -104,12 +105,13 @@ class InstagrapiApi:
     def get_user_info(self,cl: Client, username:str = '', pk=''):
         if not pk:
             try:
+                print('username ',cl.username)
                 print ('get user info by username', username)
                 user = cl.user_info_by_username(username)
             except Exception as e:
                 message_error = f"get_user_info->user_info_by_username  {e} user extract: {cl.username} proxy {cl.proxy}"
                 logger.error(message_error)
-                raise Exception(message_error)
+                raise BaseException(message_error)
             return user
         
         try:
@@ -124,9 +126,7 @@ class InstagrapiApi:
         return user
     
     def get_user_info_by_username(self,username):
-        print('random')
         profile = ProfileService.get_random_profile()
-        print("username",profile.username)
         cl = self.login_custom(profile.username,profile.password)
         return self.get_user_info(cl,username)
     

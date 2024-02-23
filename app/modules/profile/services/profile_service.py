@@ -41,6 +41,7 @@ class ProfileService:
     @classmethod
     def find_one_and_update(self,filter:dict, data: dict)->Profile:
         return self.repository.find_one_and_update(filter,data)
+    
 
     @classmethod
     def update_by_id(self, id:ID, data: Profile):
@@ -79,9 +80,13 @@ class ProfileService:
         return self.repository.paginate(filter,options)
     
     @classmethod
+    def get_one_random(self,filter:dict = {})->Profile:
+        return self.repository.get_one_random(filter)
+    
+    @classmethod
     def get_random_profile(self)->Profile:
         try:
-            obj =  self.repository.get_one_random({"status":1})
+            obj =  self.get_one_random({"status":1})
             if not obj:
                 raise BaseException("no profile!")
             return obj
@@ -91,11 +96,11 @@ class ProfileService:
     @classmethod
     async def check_count_few_minutes(self,username: str, error: str = '', check_few_minutes: bool = False):
         try:
-            update = {}
+            update = {"$set":{}}
             disable_few_minutes = 0
 
             if error:
-                update['noteError'] = error
+                update["$set"]['noteError'] = error
 
                 if ('429' in error or 'wait a few minutes' in error) and check_few_minutes:
                     config = await ConfigService.get_config_value('disable-few-minutes')
@@ -105,10 +110,10 @@ class ProfileService:
                         disable_few_minutes = int(arr[0]) if arr else 0
                     
                     update['$inc'] = {'countError': 1, 'countFewMinutes': 1}
-                    update['fewMinutesAt'] = datetime.utcnow()
+                    update["$set"]['fewMinutesAt'] = datetime.utcnow()
 
             else:
-                update['countFewMinutes'] = 0
+                update["$set"]['countFewMinutes'] = 0
                 update['$inc'] = {'countSuccess': 1}
 
 
@@ -134,7 +139,7 @@ class ProfileService:
         )  
 
     @classmethod
-    async def increment_count(self,username: str, quantity: int, type: str = '') -> dict:
+    def increment_count(self,username: str, quantity: int, type: str = '') -> dict:
         try:
             update = {
                 'countUsed': quantity,
@@ -142,7 +147,7 @@ class ProfileService:
             if type and type in ['follower', 'like', 'comment']:
                 update[f'countCurrent{type.capitalize()}'] = quantity
 
-            profile = await self.find_one_and_update(
+            profile = self.find_one_and_update(
                 {'username': username},
                 {'$inc': update},
                 new=True
@@ -154,12 +159,12 @@ class ProfileService:
             raise f"incrementCount: {e}"
 
     @classmethod  
-    async def update_count(self,username: str, quantity: int, type: str = '') -> None:
+    def update_count(self,username: str, quantity: int, type: str = '') -> None:
         try:
-            profile = await self.increment_count(username, quantity, type)
+            profile = self.increment_count(username, quantity, type)
             return profile
         except Exception as e:
-            raise f"Profile->updateCount {username}: {e}"
+            raise Exception(f"Profile->updateCount {username}: {e}")
 
 
     

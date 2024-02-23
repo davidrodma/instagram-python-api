@@ -79,7 +79,7 @@ class ProxyService:
         return self.repository.find_one({"url":url})
     
     @classmethod
-    async def random_proxy(self,type='',countryCode='') -> any:
+    async def random_proxy(self,type='',countryCode='') -> Proxy:
         where = {'status': 1}
 
         try:
@@ -104,26 +104,25 @@ class ProxyService:
 
             if type != 'website-view':
                 self.update_count(proxy['url'])
-                pass
 
             return proxy
 
-        except Exception as e:
+        except BaseException as e:
             message_error = f"ProxyController.random_proxy: {e}"
             print(message_error)
-            raise RuntimeError(message_error)
+            raise Exception(message_error)
         
     @classmethod
     async def update_count(self,url_proxy: str, error: str = '', check_few_minutes: str = '') -> dict:
         try:
-            update = {}
+            update = {"$set":{}}
             limit_proxy_few_minutes = 0
             error = error.lower()
             
             proxy = self.find_one({'url': url_proxy})
             
             if error:
-                update['noteError'] = error
+                update["$set"]['noteError'] = error
                 if 'ip_block' in error:
                     update = {
                         'noteError': f"Desabilitar proxy porque o ip está bloqueado no momento! {error}",
@@ -138,24 +137,24 @@ class ProxyService:
                     
                     if proxy and proxy.countFewMinutes > 1:
                         if is_bot and (not is_action or (is_action and change_proxy_action_error)):
-                            update['change'] = True
+                            update["$set"]['change'] = True
                     
                     if config:
                         arr = config.split(',')
                         limit_proxy_few_minutes = int(arr[1] if is_bot and arr[1] else arr[0])
                     
-                    update.update({
+                    update["$set"].update({
                         'fewMinutesAt': datetime.utcnow(),
-                        '$inc': {'countErrors': 1, 'countFewMinutes': 1},
                     })
+                    update.update({'$inc': {'countErrors': 1, 'countFewMinutes': 1}})
                 else:
                     update.update({
                         '$inc': {'countErrors': 1},
                     })
             else:
                 update = {
-                    'countFewMinutes': 0,
-                    '$inc': {'countSuccess': 1},
+                    '$set' :{'countFewMinutes': 0},
+                    '$inc': {'countSuccess': 1}
                 }
             
             proxy = self.find_one_and_update(
@@ -176,7 +175,7 @@ class ProxyService:
         
         except Exception as e:
             print('proxyCount', e)
-            raise RuntimeError('proxyCount: ' + str(e))
+            raise Exception('proxyCount: ' + str(e))
         
     @classmethod
     async def is_active(self,url: str):
@@ -196,7 +195,7 @@ class ProxyService:
         return False
         
     @classmethod
-    def is_proxy_error(message_error: str) -> bool:
+    def is_proxy_error(self,message_error: str) -> bool:
         message_error = message_error.lower()
         return any([
             ' socket ' in message_error,

@@ -20,7 +20,7 @@ class MongoRepository:
             self.collection = self.db[collection_name]
             self.model = model
         except Exception as e:
-            raise BaseException(f'MongoRepository.__init__: {e}')
+            raise BaseException(f'repo.MongoRepository.__init__: {e}')
     
     def get_collection(self):
          return self.collection
@@ -31,7 +31,7 @@ class MongoRepository:
             listParsed =  [self.model(**obj)  for obj in objects]
             return cast(List[self.model],listParsed)
         except Exception as e:
-            raise BaseException(f'find_many: {e}')
+            raise BaseException(f'repo.find_many: {e}')
 
     def find_one(self, filter: dict):
         try:
@@ -39,29 +39,29 @@ class MongoRepository:
             objParsed = self.model(**object) if object else None
             return cast(self.model,objParsed)
         except Exception as e:
-            raise BaseException(f'find_one: {e}')
+            raise BaseException(f'repo.find_one: {e}')
     
     def find_by_id(self,id:ID):
         try:
             return self.find_one({'_id': ObjectId(id)})
         except Exception as e:
-            raise BaseException(f"find: {e}")
+            raise BaseException(f"repo.find: {e}")
 
     def create(self, data: dict):
         try:
             result = self.collection.insert_one(data)
             return str(result.inserted_id)
         except Exception as e:
-            raise BaseException(f'create: {e}')
+            raise BaseException(f'repo.create: {e}')
     
     def create_many(self, data: Iterable[dict]):
         try:
             result = self.collection.insert_many(data)
             return result.inserted_ids
         except Exception as e:
-            raise BaseException(f'create_many: {e}')
+            raise BaseException(f'repo.create_many: {e}')
     
-    def has_custom_set(data: dict):
+    def has_custom_set(self,data: dict):
         return any(key.startswith('$set') for key in data.keys())
 
     def find_one_and_update(self,filter:dict, data: dict,return_document=ReturnDocument.AFTER):
@@ -71,7 +71,7 @@ class MongoRepository:
             objParsed = self.model(**object) if object else None
             return cast(self.model,objParsed)
         except Exception as e:
-            raise BaseException(f"find_one_and_update: {e}")
+            raise BaseException(f"repo.find_one_and_update: {e}")
 
     def update(self, filter:dict, data: dict):
         try:
@@ -79,14 +79,14 @@ class MongoRepository:
             result = self.collection.update_one(filter,update_data)
             return result.modified_count
         except Exception as e:
-            raise BaseException(f'update: {e}')
+            raise BaseException(f'repo.update: {e}')
     
     def update_by_id(self, id:ID, data: dict):
         try:
             query = {'_id': ObjectId(id)}
             return self.update(query, data)
         except Exception as e:
-            raise BaseException(f'update_by_id: {e}')
+            raise BaseException(f'repo.update_by_id: {e}')
     
     def update_many(self,filter:dict, data: dict):
         try:
@@ -94,7 +94,7 @@ class MongoRepository:
             result = self.collection.update_many(filter,update_data)
             return result.modified_count
         except Exception as e:
-            raise BaseException(f'update_many: {e}')
+            raise BaseException(f'repo.update_many: {e}')
     
     def update_many_by_ids(self, ids:Union[List[ID], ID], data: dict):
         try:
@@ -106,27 +106,27 @@ class MongoRepository:
             },
             data)
         except Exception as e:
-            raise BaseException(f'update_many_by_ids: {e}')
+            raise BaseException(f'repo.update_many_by_ids: {e}')
 
     def delete(self, filter:dict):
         try:
             result = self.collection.delete_one(filter)
             return result.deleted_count
         except Exception as e:
-            raise BaseException(f'delete: {e}')
+            raise BaseException(f'repo.delete: {e}')
     
     def delete_by_id(self, id:ID):
         try:
             return self.delete({'_id': ObjectId(id)})
         except Exception as e:
-            raise BaseException(f'delete_by_id: {e}')
+            raise BaseException(f'repo.delete_by_id: {e}')
     
     def delete_many(self, filter:dict):
         try:
             result = self.collection.delete_many(filter)
             return result.deleted_count
         except Exception as e:
-            raise BaseException(f'delete_many: {e}')
+            raise BaseException(f'repo.delete_many: {e}')
     
     def delete_many_by_ids(self, ids:Union[List[ID], ID]):
         try:
@@ -137,20 +137,20 @@ class MongoRepository:
                 '_id': {'$in': ids}
             })
         except Exception as e:
-            raise BaseException(f'delete_many_by_ids: {e}')
+            raise BaseException(f'repo.delete_many_by_ids: {e}')
     
     def count(self, filter:dict = {}):
         try:
             count = self.collection.count_documents(filter)
             return count
         except Exception as e:
-            raise BaseException(f'count: {e}')
+            raise BaseException(f'repo.count: {e}')
     
     def status(self, ids:Union[List[ID], ID], status:int):
         try:
             return self.update_many_by_ids(ids,{'status':status})
         except Exception as e:
-            raise BaseException(f'status: {e}')
+            raise BaseException(f'repo.status: {e}')
     
     def paginate(self, filter:dict = {}, options:PaginateOptions = {'page':1,'limit':100}):
         try:
@@ -168,7 +168,7 @@ class MongoRepository:
                 'list':listParsed,
             }
         except Exception as e:
-            raise BaseException(f'paginate: {e}')
+            raise BaseException(f'repo.paginate: {e}')
         
     def get_one_random(self,filter:dict = {}):
         try:
@@ -177,6 +177,7 @@ class MongoRepository:
                 return None
             random_number = random.randint(0, count - 1)
             objects = self.collection.find(filter).skip(random_number).limit(1)
-            return cast(self.model,self.model(**objects[0])) if objects[0] else None 
+            objParsed = self.model(**objects[0]) if  objects[0] else None
+            return cast(self.model,objParsed)
         except Exception as e:
-            raise BaseException(f'get_one_random: {e}')
+            raise BaseException(f'repo.get_one_random: {e}')

@@ -8,7 +8,7 @@ from io import BytesIO
 class InstagramUtility:
     
     @classmethod
-    def get_expire_at(reason: str):
+    def get_expire_at(self,reason: str):
         if 'block will expire on' in reason or 'will be unavailable for you until' in reason:
             split_msg = 'block will expire on ' if 'block will expire on' in reason else 'will be unavailable for you until '
             expire_at_date = reason.split(split_msg)[1][:10] + ' 03:00'
@@ -17,7 +17,7 @@ class InstagramUtility:
     
 
     @classmethod
-    def is_error_prevent_login(error: str) -> bool:
+    def is_error_prevent_login(self,error: str) -> bool:
         message_error = error.lower()
         if 'ip_block' in message_error:
             return False
@@ -34,14 +34,14 @@ class InstagramUtility:
                 'password' in message_error)
     
     @classmethod
-    def is_error_session(error: str) -> bool:
+    def is_error_session(self,error: str) -> bool:
         message_error = error.lower()
         return ('login_required' in message_error or
                 'user_has_logged_out' in message_error or
                 'not extract userid' in message_error)
     
     @classmethod
-    def is_error_prevent_action(error: str) -> bool:
+    def is_error_prevent_action(self,error: str) -> bool:
         message_error = error.lower()
         if 'ip_block' in message_error:
             return False
@@ -58,7 +58,7 @@ class InstagramUtility:
     
 
     @classmethod
-    async def stream_image_to_base64(url: str, resize_options: Optional[Dict[str, Union[int, None]]] = None) -> str:
+    async def stream_image_to_base64(self,url: str, resize_options: Optional[Dict[str, Union[int, None]]] = None) -> str:
         try:
             image = requests.get('GET', url)
             image = await image.content

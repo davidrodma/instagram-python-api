@@ -3,8 +3,10 @@
 from flask import jsonify
 import json
 from app.modules.cookie.services.cookie_service import CookieService
+from app.modules.profile.models.profile import Profile
 from app.common.utilities.json_enconder import JSONEncoder
 from app.common.utilities.exception_utility import ExceptionUtility
+from app.database.repositories.mongo_repository import MongoRepository
 
 class TestController():
     
@@ -14,9 +16,10 @@ class TestController():
 
    def test():
         try:
-            service = CookieService()
-            session = service.load_state('luiza.tanque')
-            print('session',session)
-            return jsonify({"success":True,'session':session})
+            mongo = MongoRepository('profiles',Profile)
+            result = mongo.has_custom_set({'countFewMinutes': 0, '$inc': {'countSuccess': 1}})
+            print (result)
+  
+            return jsonify({"success":True,'result':result})
         except BaseException as e:
             return ExceptionUtility.catch_response(e,'Error Test')

@@ -12,7 +12,7 @@ def json_value():
 class InstagrapiChallenge:
 
     @classmethod
-    def detect_name_challenge(e):
+    def detect_name_challenge(self,e):
         name =''
         if isinstance(e, BadPassword):
             name ='BadPassword'
