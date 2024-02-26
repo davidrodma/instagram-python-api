@@ -6,12 +6,8 @@ from app.modules.cookie.services.cookie_service import CookieService
 from app.modules.instagram.utilities.instagram_utility import InstagramUtility
 from app.modules.profile.models.profile import Profile
 from instagrapi import Client
-from flask import Flask
 import asyncio
 from datetime import datetime
-
-
-app = Flask(__name__)
 
 class InstagrapiProfile:
     service = ProfileService()
@@ -19,7 +15,7 @@ class InstagrapiProfile:
     config_service = ConfigService()
     cookie_service = CookieService()
     profiles_cl: Dict[str, Client] = {}
-    
+
     def __init__(self,api):
         self.api = api
  
@@ -94,7 +90,7 @@ class InstagrapiProfile:
                         proxy = proxy_url
                     )
                 except Exception as e:
-                    raise Exception(f"CHOCKEU {e}")
+                    raise Exception(f"Error Login {e}")
                 
                 if hasattr(cl, "error"):
                     logged = False

@@ -3,13 +3,10 @@ from instagrapi.exceptions import LoginRequired
 from app.modules.profile.services.profile_service import ProfileService
 from app.modules.cookie.services.cookie_service import CookieService
 from app.common.utilities.logging_utility import LoggingUtility
-from app.modules.instagram.api.instagrapi.instagrapi_challenge import InstagrapiChallenge
-from app.modules.instagram.api.instagrapi.instagrapi_profile import InstagrapiProfile
-from app.modules.instagram.api.instagrapi.instagrapi_extract import InstagrapiExtract
-import asyncio
+from app.modules.instagram.services.api.instagrapi.instagrapi_challenge import InstagrapiChallenge
+from app.modules.instagram.services.api.instagrapi.instagrapi_profile import InstagrapiProfile
+from app.modules.instagram.services.api.instagrapi.instagrapi_extract import InstagrapiExtract
 
-from flask import Flask
-app = Flask(__name__)
 
 logger = LoggingUtility.get_logger("InstagrapiApiService")
 
@@ -20,6 +17,7 @@ class InstagrapiApi:
         self.instagrapi_extract = InstagrapiExtract(self)
         self.instagrapi_profile = InstagrapiProfile(self)
 
+    @classmethod
     def login_custom(self,username:str,password:str,proxy:str='',verification_mode:str='',return_ig_error:bool=False):
         print("login_custom")
         """
@@ -137,7 +135,8 @@ class InstagrapiApi:
     
     async def user_info(self,username:str):
         try:
-            return await self.instagrapi_extract.user_info_extract(username=username)
+            result = await self.instagrapi_extract.user_info_extract(username=username)
+            return result
         except Exception as e:
             raise BaseException(f"instagrapi_api.user_info.user_info_extract: {e}")
 

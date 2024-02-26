@@ -62,7 +62,7 @@ class MongoRepository:
             raise BaseException(f'repo.create_many: {e}')
     
     def has_custom_set(self,data: dict):
-        return any(key.startswith('$set') for key in data.keys())
+        return any(key.startswith('$') for key in data.keys())
 
     def find_one_and_update(self,filter:dict, data: dict,return_document=ReturnDocument.AFTER):
         try:

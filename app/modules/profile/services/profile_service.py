@@ -133,7 +133,7 @@ class ProfileService:
 
     @classmethod
     async def note_error(self,username: str, message: str):
-        await self.find_one_and_update(
+        return await self.find_one_and_update(
             {'username': username},
             {'$set': {'noteError': message}, '$inc': {'countError': 1}}
         )  
@@ -149,8 +149,7 @@ class ProfileService:
 
             profile = self.find_one_and_update(
                 {'username': username},
-                {'$inc': update},
-                new=True
+                {'$inc': update}
             )
 
             return profile

@@ -1,11 +1,13 @@
 from instagrapi import Client
-from flask import Flask
-from app.modules.instagram.api.instagrapi.instagrapi_profile import InstagrapiProfile
+from app.modules.instagram.services.api.instagrapi.instagrapi_profile import InstagrapiProfile
+from app.modules.instagram.services.api.instagrapi.types import UserWithImage,User
 from app.modules.profile.services.profile_service import ProfileService
 from app.modules.instagram.utilities.instagram_utility import InstagramUtility
+
+from app import app
+
 import sys, os
 
-app = Flask(__name__)
 
 class InstagrapiExtract:
     
@@ -46,7 +48,7 @@ class InstagrapiExtract:
             print('userInfoType init', username or pk)
             success = False
             attempts = 3
-            info = None
+            info:UserWithImage = {}
             type = self.type_extract_by_port()
             cl:Client = None
             while not success:
@@ -54,28 +56,25 @@ class InstagrapiExtract:
                     cl = await self.login_extract()
                     attempts -= 1
                     success = True
-                    print("PEGAR")
-                    info = self.api.get_user_info(cl, username, pk)
-                    print("PEGOU",info)
+                    infoUser:User = self.api.get_user_info(cl, username, pk)
+                    info = UserWithImage(**infoUser.model_dump())
                     if type=="worker":
                         pass
                     elif type=="boost":
                         pass
                     else:
-                        print("CONTA")
                         self.profile_service.update_count(cl.username, 1, 'userInfo')
-                        print("CONTOU")
-
-                    if info and info.get('profile_pic_url') and not noImage:
-                        info['image_base64'] = await InstagramUtility.stream_image_to_base64(info['profile_pic_url'], {'width': 150, 'height': 150})
-
+                    if hasattr(info,'profile_pic_url') and not noImage:
+                        image = InstagramUtility.stream_image_to_base64(info.profile_pic_url, {'width': 150, 'height': 150})
+                        #setattr(info, 'image_base64', image)
+                        info.image_base64 = image
                 except Exception as err:
-                    message_error = str(err)
+                    success = False
+                    message_error = f"user_info_extract->while: {err}"
+                    print(message_error)
                     await self.instagrapi_profile.error_handling(cl, message_error)
                     if attempts <= 0:
                         raise Exception(message_error)
-                    success = False
-
             return info
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()

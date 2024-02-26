@@ -13,8 +13,9 @@ class JSONEncoder(json.JSONEncoder):
             return str(obj)
         if isinstance(obj, object):
             # Convertendo o ObjectId para string
-            obj_dict = obj.__dict__.copy()
-            if isinstance(obj_dict.get('_id'), ObjectId):
-                obj_dict['_id'] = str(obj_dict['_id'])
-            return obj_dict
+            if hasattr(obj,'__dict__'):
+                obj_dict = obj.__dict__.copy()
+                if isinstance(obj_dict.get('_id'), ObjectId):
+                    obj_dict['_id'] = str(obj_dict['_id'])
+                return obj_dict
         return super().default(obj)

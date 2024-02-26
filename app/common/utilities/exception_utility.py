@@ -3,6 +3,7 @@ import json
 from flask import jsonify, request
 from app.common.utilities.json_enconder import JSONEncoder
 from pydantic import ValidationError
+import sys, os
 
 class ExceptionUtility:
 
@@ -40,3 +41,9 @@ class ExceptionUtility:
     @classmethod
     def base_exception(self,e: Exception,pretext=""):
         return JSONEncoder().encode(self.catch(e,pretext)), 400
+    
+    @classmethod
+    def print_line_error(self):
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
