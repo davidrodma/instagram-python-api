@@ -1,14 +1,15 @@
 from instagrapi import Client
+from instagrapi.types import Media
 from instagrapi.exceptions import LoginRequired
-from app.modules.profile.services.profile_service import ProfileService
 from app.modules.cookie.services.cookie_service import CookieService
 from app.common.utilities.logging_utility import LoggingUtility
 from app.modules.instagram.api.instagrapi.instagrapi_challenge import InstagrapiChallenge
 from app.modules.instagram.api.instagrapi.instagrapi_profile import InstagrapiProfile
 from app.modules.instagram.api.instagrapi.instagrapi_extract import InstagrapiExtract
+from typing import Union,Dict, Optional,List
+from app.modules.instagram.api.instagrapi.types import UserWithImage,User
 
-
-logger = LoggingUtility.get_logger("InstagrapiApiService")
+logger = LoggingUtility.get_logger("InstagrapiApi")
 
 class InstagrapiApi:
     cookie_service = CookieService()
@@ -107,45 +108,83 @@ class InstagrapiApi:
         logger.info(f"Logged in {cl.username} { 'via password' if login_via_pw else 'via session'}")
         return cl
 
-    def get_user_info(self,cl: Client, username:str = '', pk=''):
+    def get_user_info(self,cl: Client, username:str = '', pk='')->UserWithImage:
+        user:UserWithImage = None
         if not pk:
             try:
-                print('username ',cl.username)
-                print ('get user info by username', username)
+                print('username ',cl.username,'get user info by username', username)
                 user = cl.user_info_by_username_v1(username=username)
             except Exception as e:
-                message_error = f"get_user_info->user_info_by_username  {e} user extract: {cl.username} proxy {cl.proxy}"
+                message_error = f"get_user_info->user_info_by_username  {e} user extract: {cl.username} proxy {cl.proxy} target {username}"
                 logger.error(message_error)
                 raise Exception(message_error)
-            return user
+        else:
+            try:
+                print('username',cl.username,'get user info by pk', pk)
+                user = cl.user_info_v1(user_id=pk)
+            except Exception as e:
+                message_error = f"get_user_info->user_info  {e} user extract: {cl.username} proxy {cl.proxy} target pk {pk}"
+                logger.error(message_error)
+                raise Exception(message_error)
         
-        try:
-            print ('get user info by pk', username)
-            user = cl.user_info_v1(user_id=pk)
-        except Exception as e:
-            message_error = f"get_user_info->user_info  {e} user extract: {cl.username} proxy {cl.proxy}"
-            logger.error(message_error)
-            raise Exception(message_error)
-        
-        logger.warning("Username information received: %s %s" % user.username,user.pk)
+        logger.info((f"Username information received: {user.username}, {user.pk}"))
         return user
     
-    def get_user_info_by_username(self,username):
-        profile = ProfileService.get_random_profile()
-        cl = self.login_custom(profile.username,profile.password)
-        return self.get_user_info(cl,username)
-    
-    def get_user_info_by_id(self,pk):
-        profile = ProfileService.get_random_profile()
-        cl = self.login_custom(profile.username,profile.password)
-        return self.get_user_info(cl,pk=pk)
-    
-    async def user_info(self,username:str):
+    async def user_info(self,username:str="",pk:str=""):
         try:
-            result = await self.instagrapi_extract.user_info_extract(username=username)
+            result = await self.instagrapi_extract.user_info_extract(username=username,pk=pk)
             return result
         except Exception as e:
             raise Exception(f"instagrapi_api.user_info.user_info_extract: {e}")
+        
+    async def user_info_by_username(self,username:str):
+        try:
+            result = await self.user_info(username=username)
+            return result
+        except Exception as e:
+            raise Exception(f"instagrapi_api.user_info_by_username.user_info_extract: {e}")
+        
+    async def user_info_by_id(self,id:str):
+        try:
+            result = await self.user_info(pk=id)
+            return result
+        except Exception as e:
+            raise Exception(f"instagrapi_api.user_info_by_id.user_info_extract: {e}")
+        
+
+    async def get_user_recent_posts_custom(
+        self,
+        cl: Client,
+        username: str = '',
+        max: int = 60,
+        pk: Union[str, None, int] = None,
+        options: Optional[Dict[str, Union[str, bool]]] = None,
+    ):
+        list_posts: List[Media] = []
+        next_max_id = ''
+        return_with_next_max_id = False
+
+        if options:
+            next_max_id = options.get('next_max_id', '')
+            return_with_next_max_id = options.get('return_with_next_max_id', False)
+
+        try:
+            if pk is None:
+                pk = cl.user_id_from_username(username)
+            list_posts,next_max_id = cl.user_medias_paginated(user_id=pk, amount=max, end_cursor=next_max_id)    
+        except (Exception) as err:
+            message_error = f"api.get_user_recent_posts_custom.user_medias_paginated {err}"
+            logger.error(message_error)
+            raise Exception(message_error)
+
+        logger.info(
+            f'User recent posts received {username} {str(pk)} {str(len(list_posts))} posts'
+        )
+
+        if return_with_next_max_id:
+            return {'total_recent_posts': len(list_posts), 'next_max_id': next_max_id, 'posts': list_posts}
+
+        return list_posts
 
     def test_proxy(self,proxy:str):
         cl = Client()

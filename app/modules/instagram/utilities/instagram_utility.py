@@ -86,3 +86,13 @@ class InstagramUtility:
             image = buffered.getvalue()
         
         return 'data:image/png;base64,' + base64.b64encode(image).decode('utf-8')
+    
+
+    @classmethod
+    async def get_image_base64_from_post(self,post: dict, size: dict = {"width": 150, "height": 150}):
+        url = ''
+        if "image_versions2" in post:
+            url = post["image_versions2"]["candidates"][0]["url"]
+        elif "carousel_media" in post:
+            url = post["carousel_media"][0]["image_versions2"]["candidates"][0]["url"]
+        return await self.stream_image_to_base64(url, size)

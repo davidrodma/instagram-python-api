@@ -31,4 +31,5 @@ class Routes:
 
         #Instagram
         app.add_url_rule('/instagram/user-info', 'instagram.user_info', InstagramScrapeController.user_info, methods=['GET'])
+        app.add_url_rule('/instagram/user-info-by-id', 'instagram.user_info_by_id', InstagramScrapeController.user_info_by_id, methods=['GET'])
         

@@ -17,14 +17,11 @@ class InstagramService:
             verification_mode=verification_mode,
             return_ig_error=return_ig_error)
     
-    async def user_info(self,username:str):
+    async def user_info_by_username(self,username:str):
         return await self.api.user_info(username)
-    
-    def get_user_info_by_username(self,username):
-        return self.api.get_user_info_by_username(username)
-    
-    def get_user_info_by_id(self,pk):
-        return self.api.get_user_info_by_id(pk)
+
+    async def user_info_by_id(self,id:str):
+        return await self.api.user_info_by_id(id)
 
     def test_proxy(self,proxy:str):
         return self.api.test_proxy(proxy)

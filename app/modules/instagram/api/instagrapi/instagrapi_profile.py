@@ -7,6 +7,9 @@ from app.modules.instagram.utilities.instagram_utility import InstagramUtility
 from app.modules.profile.models.profile import Profile
 from instagrapi import Client
 import asyncio
+from app.common.utilities.logging_utility import LoggingUtility
+
+logger = LoggingUtility.get_logger("InstagrapiProfile")
 
 if TYPE_CHECKING:
     from app.modules.instagram.api.instagrapi.instagrapi_api import InstagrapiApi
@@ -151,9 +154,10 @@ class InstagrapiProfile:
 
         if hasattr(cl, "username"):
             input_login = cl.username
-            print(f"Error Handling: {input_login} {message_error}\n")
+            message_error = f"Error Handling: {message_error} "
             proxy = cl.proxy  or 'proxy não detectado'
             message_error = f"{message_error} username {input_login} proxy {proxy}"
+            logger.error(message_error)
         else:
             raise Exception(f"Error Handling: ig.loggedInUser.inputLogin without username {message_error}\n")
 

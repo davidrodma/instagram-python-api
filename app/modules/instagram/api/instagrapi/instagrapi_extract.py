@@ -4,8 +4,9 @@ from app.modules.instagram.api.instagrapi.instagrapi_profile import InstagrapiPr
 from app.modules.instagram.api.instagrapi.types import UserWithImage,User
 from app.modules.profile.services.profile_service import ProfileService
 from app.modules.instagram.utilities.instagram_utility import InstagramUtility
+from app.common.utilities.exception_utility import ExceptionUtility
 from app import app
-import sys, os
+import asyncio
 
 if TYPE_CHECKING:
     from app.modules.instagram.api.instagrapi.instagrapi_api import InstagrapiApi
@@ -41,12 +42,13 @@ class InstagrapiExtract:
                 profile = self.profile_service.get_random_profile()
                 cl = await self.instagrapi_profile.login(profile,True)
             except Exception as e:
+                ExceptionUtility.print_line_error()
                 raise Exception(f"login_extract->login: {e}")
         return cl
     
     async def user_info_extract(self,username:str = '', pk: str ='', noImage: bool = False) -> dict:
         try:
-            print('userInfoType init', username or pk)
+            print('user_info_extract init', username or pk)
             success = False
             attempts = 3
             info:UserWithImage = {}
@@ -78,10 +80,99 @@ class InstagrapiExtract:
                         raise Exception(message_error)
             return info
         except Exception as e:
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            print(exc_type, fname, exc_tb.tb_lineno)
-
+            ExceptionUtility.print_line_error()
             message_error = f'user_info_extract: {e}'
             print(message_error)
             raise Exception(message_error)
+        
+
+    async def user_recent_posts_extract(self,username: str, max: int = 60, pk: str = '', options: dict = None):
+        try:
+            print('user_recent_posts_type init username', username, 'pk', pk)
+            ig = None
+            attempts = 3
+            posts = []
+            success = False
+            info:UserWithImage = {}
+            cl:Client = None
+            while attempts >= 0:
+                attempts -= 1
+                success = True
+
+                cl = await self.login_extract()
+                try:
+                    infoUser = await self.api.get_user_info(cl, username, pk)
+                    info = UserWithImage(**infoUser.model_dump())
+                except Exception as e:
+                    message_error = f"user_recent_posts_extract.get_user_info {e}"
+                    success = False
+                    if attempts <= 0 or 'not found' in message_error or 'user info response' in message_error:
+                        await self.instagrapi_profile.error_handling(ig, message_error)
+                        raise Exception(f'usuário não encontrado: {message_error}')
+
+                if not info or not success:
+                    continue
+
+                if hasattr(info,'profile_pic_url'):
+                    if not options.get('return_with_next_max_id', False):
+                        image = InstagramUtility.stream_image_to_base64(info.profile_pic_url, {'width': 150, 'height': 150})
+                        #setattr(info, 'image_base64', image)
+                        info.image_base64 = image
+                    if not pk:
+                        pk = str(info.pk)
+
+                if info.is_private:
+                    print(f'{username} {pk} privado:', info.is_private)
+                    return {
+                        'error': 'profile is private!',
+                        'is_private': True,
+                        'user': info,
+                    }
+
+                if info.media_count == 0:
+                    return {
+                        'user': info,
+                        'posts': [],
+                        'total_recent_posts': 0,
+                    }
+
+                try:
+                    posts = await self.api.get_user_recent_posts_custom(ig, username, max, info.pk, options)
+                except (Exception) as err:
+                    success = False
+                    message_error = f"{err}"
+                    if attempts <= 0:
+                        await self.instagrapi_profile.error_handling(ig, message_error)
+                        raise Exception(f'posts não encontrado: {message_error}')
+
+                if not success:
+                    continue
+
+                if success:
+                    attempts = -1
+
+            if not options.get('return_with_next_max_id', False) and isinstance(posts, list):
+                if not posts or not posts[0]:
+                    return {
+                        'user': info,
+                        'error': 'posts não encontrado',
+                        'total_recent_posts': 0,
+                    }
+
+                posts = await asyncio.gather(*[
+                    InstagramUtility.get_image_base64_from_post(post) for post in posts
+                ])
+                self.profile_service.update_count(cl.username, len(posts))
+                return {
+                    'total_recent_posts': len(posts),
+                    'posts': posts,
+                    'user': info,
+                }
+            else:
+                return {
+                    **posts,
+                    'username_action': cl.username if cl and cl.username else '',
+                    'user': info,
+                }
+        except (Exception) as e:
+            raise Exception(str(e))
