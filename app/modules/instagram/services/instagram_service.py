@@ -1,8 +1,8 @@
-from app.modules.instagram import api
+from app.modules.instagram.api.instagrapi.instagrapi_api import InstagrapiApi
 
 class InstagramService:
+    api = InstagrapiApi()    
     
-
     def login_custom(self,
         username:str,
         password:str,
@@ -10,7 +10,7 @@ class InstagramService:
         verification_mode:str='',
         return_ig_error:bool=False):
 
-        return api.login_custom(
+        return self.api.login_custom(
             username=username,
             password=password,
             proxy=proxy,
@@ -18,17 +18,14 @@ class InstagramService:
             return_ig_error=return_ig_error)
     
     async def user_info(self,username:str):
-        return await api.user_info(username)
+        return await self.api.user_info(username)
     
-    async def delete_memory_session(self,type:str,username: str):
-        return api.delete_memory_session(type,username)
-
     def get_user_info_by_username(self,username):
-        return api.get_user_info_by_username(username)
+        return self.api.get_user_info_by_username(username)
     
     def get_user_info_by_id(self,pk):
-        return api.get_user_info_by_id(pk)
+        return self.api.get_user_info_by_id(pk)
 
     def test_proxy(self,proxy:str):
-        return api.test_proxy(proxy)
+        return self.api.test_proxy(proxy)
     

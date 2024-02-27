@@ -79,7 +79,7 @@ class ProxyService:
         return self.repository.find_one({"url":url})
     
     @classmethod
-    async def random_proxy(self,type='',countryCode='') -> Proxy:
+    def random_proxy(self,type='',countryCode='') -> Proxy:
         where = {'status': 1}
 
         try:
@@ -107,13 +107,13 @@ class ProxyService:
 
             return proxy
 
-        except BaseException as e:
+        except Exception as e:
             message_error = f"ProxyController.random_proxy: {e}"
             print(message_error)
             raise Exception(message_error)
         
     @classmethod
-    async def update_count(self,url_proxy: str, error: str = '', check_few_minutes: str = '') -> dict:
+    def update_count(self,url_proxy: str, error: str = '', check_few_minutes: str = '') -> dict:
         try:
             update = {"$set":{}}
             limit_proxy_few_minutes = 0
@@ -130,9 +130,9 @@ class ProxyService:
                         'fewMinutesAt': datetime.utcnow(),
                     }
                 elif ('few minutes' in error or ' 429 ' in error or self.is_proxy_error(error)) and check_few_minutes:
-                    config = await ConfigService.get_config_value('limit-proxy-few-minutes')
+                    config = ConfigService.get_config_value('limit-proxy-few-minutes')
                     is_bot = check_few_minutes == 'worker' or check_few_minutes == 'boost'
-                    change_proxy_action_error = bool(int(await ConfigService.get_config_value('change-proxy-action-error')))
+                    change_proxy_action_error = bool(int(ConfigService.get_config_value('change-proxy-action-error')))
                     is_action = 'errorhandling' in error or 'action' in error
                     
                     if proxy and proxy.countFewMinutes > 1:
@@ -178,7 +178,7 @@ class ProxyService:
             raise Exception('proxyCount: ' + str(e))
         
     @classmethod
-    async def is_active(self,url: str):
+    def is_active(self,url: str):
         try:
             current_proxy = self.get_by_url(url)
         except Exception as error:

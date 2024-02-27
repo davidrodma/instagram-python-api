@@ -19,8 +19,8 @@ class InstagrapiChallenge:
         elif isinstance(e, LoginRequired):
             name ='LoginRequired'
         elif isinstance(e, ChallengeRequired):
-            if isinstance(e, SelectContactPointRecoveryForm):
-                name ='SelectContactPointRecoveryForm'
+            #if isinstance(e, SelectContactPointRecoveryForm):
+            #    name ='SelectContactPointRecoveryForm'
             if isinstance(e, RecaptchaChallengeForm):
                 name ='RecaptchaChallengeForm'
             return 'ChallengeRequired'

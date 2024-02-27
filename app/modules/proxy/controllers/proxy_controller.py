@@ -26,7 +26,7 @@ class ProxyController(Controller):
         try:
             obj = self.service.find_by_id(id)
             return JSONEncoder().encode(obj) if obj else (jsonify({'error': 'Record not found'}), 404)
-        except BaseException as e:
+        except Exception as e:
             return ExceptionUtility.catch_response(e,'Error Get')
 
     @classmethod

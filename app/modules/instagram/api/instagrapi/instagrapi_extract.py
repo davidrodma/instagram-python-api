@@ -1,19 +1,20 @@
 from instagrapi import Client
-from app.modules.instagram.services.api.instagrapi.instagrapi_profile import InstagrapiProfile
-from app.modules.instagram.services.api.instagrapi.types import UserWithImage,User
+from typing import TYPE_CHECKING
+from app.modules.instagram.api.instagrapi.instagrapi_profile import InstagrapiProfile
+from app.modules.instagram.api.instagrapi.types import UserWithImage,User
 from app.modules.profile.services.profile_service import ProfileService
 from app.modules.instagram.utilities.instagram_utility import InstagramUtility
-
 from app import app
-
 import sys, os
 
+if TYPE_CHECKING:
+    from app.modules.instagram.api.instagrapi.instagrapi_api import InstagrapiApi
 
 class InstagrapiExtract:
     
     profile_service = ProfileService()
 
-    def __init__(self,api):
+    def __init__(self,api:'InstagrapiApi'):
         self.api = api
         self.instagrapi_profile = InstagrapiProfile(api)
 
@@ -40,7 +41,7 @@ class InstagrapiExtract:
                 profile = self.profile_service.get_random_profile()
                 cl = await self.instagrapi_profile.login(profile,True)
             except Exception as e:
-                raise Exception(f"loginExtract->login: {e}")
+                raise Exception(f"login_extract->login: {e}")
         return cl
     
     async def user_info_extract(self,username:str = '', pk: str ='', noImage: bool = False) -> dict:

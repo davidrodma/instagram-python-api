@@ -5,6 +5,7 @@ from app.common.types.paginate_options import PaginateOptions
 from app.common.types.id import ID
 from datetime import datetime
 from app.modules.config.services.config_service import ConfigService
+from app.modules.instagram.utilities.instagram_utility import InstagramUtility
 
 class ProfileService:
 
@@ -88,13 +89,13 @@ class ProfileService:
         try:
             obj =  self.get_one_random({"status":1})
             if not obj:
-                raise BaseException("no profile!")
+                raise Exception("no profile!")
             return obj
         except Exception as e:
-             raise BaseException(f'get_random_profile: {e}')
+             raise Exception(f'get_random_profile: {e}')
         
     @classmethod
-    async def check_count_few_minutes(self,username: str, error: str = '', check_few_minutes: bool = False):
+    def check_count_few_minutes(self,username: str, error: str = '', check_few_minutes: bool = False):
         try:
             update = {"$set":{}}
             disable_few_minutes = 0
@@ -103,7 +104,7 @@ class ProfileService:
                 update["$set"]['noteError'] = error
 
                 if ('429' in error or 'wait a few minutes' in error) and check_few_minutes:
-                    config = await ConfigService.get_config_value('disable-few-minutes')
+                    config = ConfigService.get_config_value('disable-few-minutes')
                     
                     if config:
                         arr = config.split(',')
@@ -123,17 +124,17 @@ class ProfileService:
             )
 
             if profile and disable_few_minutes > 0 and profile.countFewMinutes >= disable_few_minutes:
-                await self.disable(profile.get('username'), f"disable error because config disable-few-minutes: {error}")
+                self.disable(profile.get('username'), f"disable error because config disable-few-minutes: {error}")
 
             return profile
 
         except Exception as e:
             print('checkCountFewMinutes', e)
-            raise f'checkCountFewMinutes: {e}'
+            raise Exception(f'checkCountFewMinutes: {e}')
 
     @classmethod
-    async def note_error(self,username: str, message: str):
-        return await self.find_one_and_update(
+    def note_error(self,username: str, message: str):
+        return self.find_one_and_update(
             {'username': username},
             {'$set': {'noteError': message}, '$inc': {'countError': 1}}
         )  
@@ -155,7 +156,7 @@ class ProfileService:
             return profile
         except Exception as e:
             print('incrementCount', e)
-            raise f"incrementCount: {e}"
+            raise Exception(f"incrementCount: {e}")
 
     @classmethod  
     def update_count(self,username: str, quantity: int, type: str = '') -> None:
@@ -164,7 +165,35 @@ class ProfileService:
             return profile
         except Exception as e:
             raise Exception(f"Profile->updateCount {username}: {e}")
+        
 
+    @classmethod
+    def disable(self,username: str, reason: str = '')->Profile:
+        try:
+            print('disable', username)
+            date = datetime.utcnow()
+            update = {
+                '$set':{
+                    'status': 0,
+                    'disabledAt': date,
+                    'pausedAtFollower': date,
+                    'pausedAtLike': date,
+                    'pausedAtComment': date
+                }
+            }
+            if reason:
+                expire_at = InstagramUtility.get_expire_at(reason)
+                update['$set'].update({
+                    'noteError': reason,
+                    'expireAt': expire_at
+                })
+                update.update({'$inc': {'countError': 1}})
+            return self.find_one_and_update({'username': username}, update)
+        except Exception as e:
+            message_error = f'profile_service->disable: {e}'
+            print('disable', message_error)
+            raise Exception(message_error)
+        
 
     
 

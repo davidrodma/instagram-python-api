@@ -3,9 +3,9 @@ from instagrapi.exceptions import LoginRequired
 from app.modules.profile.services.profile_service import ProfileService
 from app.modules.cookie.services.cookie_service import CookieService
 from app.common.utilities.logging_utility import LoggingUtility
-from app.modules.instagram.services.api.instagrapi.instagrapi_challenge import InstagrapiChallenge
-from app.modules.instagram.services.api.instagrapi.instagrapi_profile import InstagrapiProfile
-from app.modules.instagram.services.api.instagrapi.instagrapi_extract import InstagrapiExtract
+from app.modules.instagram.api.instagrapi.instagrapi_challenge import InstagrapiChallenge
+from app.modules.instagram.api.instagrapi.instagrapi_profile import InstagrapiProfile
+from app.modules.instagram.api.instagrapi.instagrapi_extract import InstagrapiExtract
 
 
 logger = LoggingUtility.get_logger("InstagrapiApiService")
@@ -18,7 +18,7 @@ class InstagrapiApi:
         self.instagrapi_profile = InstagrapiProfile(self)
 
     @classmethod
-    def login_custom(self,username:str,password:str,proxy:str='',verification_mode:str='',return_ig_error:bool=False):
+    def login_custom(self,username:str,password:str,proxy:str='',verification_mode:str='',return_ig_error:bool=False)->Client:
         print("login_custom")
         """
         Attempts to login to Instagram using either the provided session information
@@ -43,19 +43,19 @@ class InstagrapiApi:
         login_via_session = False
         login_via_pw = False
         message_error = ""
+        old_session = {}
         if session:
             try:
                 logger.warning(f'Cookie session state found and kept')
                 cl.set_settings(session)
+                old_session = cl.get_settings()
                 cl.login(username, password)
                 # check if session is valid
                 try:
                     cl.get_timeline_feed()
                 except LoginRequired:
                     logger.warning("Session is invalid, need to login via username and password")
-
                     old_session = cl.get_settings()
-
                     # use the same device uuids across logins
                     cl.set_settings({})
                     cl.set_uuids(old_session["uuids"])
@@ -63,7 +63,9 @@ class InstagrapiApi:
                         cl.login(username, password)
                     except Exception as e: 
                         name_challenge = InstagrapiChallenge.detect_name_challenge(e)
-                        raise Exception(f"login by login_via_session required {name_challenge} {e}")
+                        raise Exception(f"login by login_via_session.get_timeline_feed LoginRequired {name_challenge} {e}")
+                except Exception as e:
+                    raise Exception(f"login by login_via_session.get_timeline_feed")
                 login_via_session = True
                 #cl.dump_settings(f"{username}.json")
                 self.cookie_service.save_state(username=username,state=cl.get_settings(),pk=cl.user_id)
@@ -76,7 +78,11 @@ class InstagrapiApi:
         if not login_via_session:
             try:
                 logger.info(f"Attempting to login via username {username} and password")
-                cl.set_settings({})
+                
+                cl.set_uuids(old_session["uuids"]) if old_session.get("uuids") else cl.set_settings({})   
+                
+                #cl.set_settings({})
+
                 if cl.login(username, password):
                     message_error = ""
                     logger.warning(f'Input Login accepted')
@@ -95,6 +101,7 @@ class InstagrapiApi:
                 logger.error(message_error)
         
         if message_error:
+            logger.warning("ENTROU ERROR")
             raise Exception(f"ERROR login Couldn't login user with either password or session: {message_error}")
         
         logger.info(f"Logged in {cl.username} { 'via password' if login_via_pw else 'via session'}")
@@ -105,16 +112,16 @@ class InstagrapiApi:
             try:
                 print('username ',cl.username)
                 print ('get user info by username', username)
-                user = cl.user_info_by_username(username)
+                user = cl.user_info_by_username_v1(username=username)
             except Exception as e:
                 message_error = f"get_user_info->user_info_by_username  {e} user extract: {cl.username} proxy {cl.proxy}"
                 logger.error(message_error)
-                raise BaseException(message_error)
+                raise Exception(message_error)
             return user
         
         try:
             print ('get user info by pk', username)
-            user = cl.user_info(pk)
+            user = cl.user_info_v1(user_id=pk)
         except Exception as e:
             message_error = f"get_user_info->user_info  {e} user extract: {cl.username} proxy {cl.proxy}"
             logger.error(message_error)
@@ -138,7 +145,7 @@ class InstagrapiApi:
             result = await self.instagrapi_extract.user_info_extract(username=username)
             return result
         except Exception as e:
-            raise BaseException(f"instagrapi_api.user_info.user_info_extract: {e}")
+            raise Exception(f"instagrapi_api.user_info.user_info_extract: {e}")
 
     def test_proxy(self,proxy:str):
         cl = Client()
@@ -148,12 +155,4 @@ class InstagrapiApi:
         print(f"Before: {before_ip}")
         print(f"After: {after_ip}")
         return before_ip!=after_ip
-    
-    def delete_memory_session(self,type:str,username:str):
-        if   type == "worker":
-            pass
-        elif type == "boost":
-            pass
-        else:
-           self.instagrapi_profile.delete_memory_session(username)
 

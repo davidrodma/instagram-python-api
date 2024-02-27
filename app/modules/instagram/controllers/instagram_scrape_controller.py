@@ -17,5 +17,5 @@ class InstagramScrapeController(Controller):
             dto = UsernameDto(**request.get_json())
             info = await self.service.user_info(dto.username)
             return JSONEncoder().encode(info)
-        except BaseException as e:
+        except Exception as e:
             return ExceptionUtility.catch_response(e,f'Error Get')
