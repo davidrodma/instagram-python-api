@@ -32,4 +32,9 @@ class Routes:
         #Instagram
         app.add_url_rule('/instagram/user-info', 'instagram.user_info', InstagramScrapeController.user_info, methods=['GET'])
         app.add_url_rule('/instagram/user-info-by-id', 'instagram.user_info_by_id', InstagramScrapeController.user_info_by_id, methods=['GET'])
-        
+        app.add_url_rule('/instagram/media-url-info', 'instagram.media_url_info', InstagramScrapeController.media_url_info, methods=['GET'])
+        app.add_url_rule('/instagram/media-id-info', 'instagram.media_id_info', InstagramScrapeController.media_id_info, methods=['GET'])
+        app.add_url_rule('/instagram/media-id', 'instagram.media_id', InstagramScrapeController.media_id, methods=['GET'])
+        app.add_url_rule('/instagram/user-recent-posts', 'instagram.user_recent_posts', InstagramScrapeController.user_recent_posts, methods=['GET'])
+        app.add_url_rule('/instagram/user-last-post', 'instagram.user_last_post', InstagramScrapeController.user_last_post, methods=['GET'])
+        app.add_url_rule('/instagram/user-info-and-last-post', 'instagram.user_info_and_last_post', InstagramScrapeController.user_info_and_last_post, methods=['GET'])

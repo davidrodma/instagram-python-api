@@ -17,6 +17,8 @@ class TestController():
 
    def test():
       try:
+   
+         return jsonify({"username":bool({})})
          success = False
          attempts = 3
          while not success:

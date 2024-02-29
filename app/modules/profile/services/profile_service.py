@@ -124,7 +124,7 @@ class ProfileService:
             )
 
             if profile and disable_few_minutes > 0 and profile.countFewMinutes >= disable_few_minutes:
-                self.disable(profile.get('username'), f"disable error because config disable-few-minutes: {error}")
+                self.disable(profile.username, f"disable error because config disable-few-minutes: {error}")
 
             return profile
 

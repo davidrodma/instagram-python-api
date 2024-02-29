@@ -76,17 +76,17 @@ class CookieService:
     def paginate(self,filter={},options: PaginateOptions = {'page':1,'limit':100}):
         return self.repository.paginate(filter,options)
     
-    def get_by_username_or_pk(self,username:str='',pk:str=''):
+    def get_by_username_or_pk(self,username:str,pk:str=''):
         cookie:Cookie = None
-        if not pk and not username: 
-            return cookie
+        if not username:
+            raise Exception("cookie.get_by_username_or_pk: not username")
         if pk:
             cookie = self.repository.find_one({"pk":pk})
         return cookie if cookie else self.repository.find_one({"username":username})
 
     def load_state(self,username:str,pk:str=''):
         cookie = self.get_by_username_or_pk(username,pk)
-        return json.loads(cookie.state) if cookie else None
+        return json.loads(cookie.state) if cookie and cookie.state else None
     
     def save_state(self,
         username:str,
