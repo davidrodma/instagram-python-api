@@ -1,14 +1,18 @@
 from instagrapi import Client
+from instagrapi.types import UserShort
 from typing import TYPE_CHECKING, List
 from app.modules.instagram.api.instagrapi.instagrapi_profile import InstagrapiProfile
 from app.modules.instagram.api.instagrapi.instagrapi_helper import InstagrapiHelper
 from app.modules.instagram.api.instagrapi.types import UserWithImage,User,Media,MediaWithImage
 from app.modules.profile.services.profile_service import ProfileService
-from app.modules.instagram.utilities.instagram_utility import InstagramUtility
 from app.common.utilities.exception_utility import ExceptionUtility
 from app.common.utilities.image_utility import ImageUtility
 from app import app
 import asyncio
+import math
+from app.common.utilities.logging_utility import LoggingUtility
+
+logger = LoggingUtility.get_logger("InstagrapiExtract")
 
 if TYPE_CHECKING:
     from app.modules.instagram.api.instagrapi.instagrapi_api import InstagrapiApi
@@ -256,6 +260,115 @@ class InstagrapiExtract:
                 message_error = f"extract.user_last_post_extract: {e}"
                 print(message_error)
                 raise Exception(message_error)
+            
+    async def followers_extract(self,
+        username: str = '',
+        pk: str = '',
+        query: str = None,
+        max: int = 200,
+        next_max_id:str = '',
+        return_with_next_max_id:bool = False,
+        only_username:bool = False
+        ):
+
+        username_action = ''
+        try:
+            cl = await self.login_extract()
+            username_action = cl.username
+            print('SCRAPER FOLLOWERS BEGIN')
+
+            followers = await self.api.get_followers(
+                cl = cl,
+                username = username,
+                pk = pk,
+                query = query,
+                max = max,
+                next_max_id = next_max_id,
+                return_with_next_max_id = return_with_next_max_id
+            )
+
+            print('SCRAPER EXTRACTED')
+            if only_username:
+                followers['list'] = [user['username'] for user in followers['list']]
+            return followers
+
+        except Exception as e:
+            ExceptionUtility.print_line_error()
+            print('SCRAPER ERROR')             
+            message_error = f"extract.followers: {e}"
+            print(message_error)
+            return {'error': str(e), 'username_action': username_action}
+        
+
+    async def followers_in_profile_extract(self,
+        username_target: str = '', 
+        id_target: str = '', 
+        max: int = 200,
+        username_action: str = '',
+        followers_number: int = None,
+        return_image_base64: bool = False) -> dict:
+
+        info_target: UserWithImage
+        change_username = False
+        try:
+            cl = await self.login_extract()
+            image_base64 = ''
+
+            info_target = await self.api.get_user_info(cl, username_target, id_target)
+            if username_target and username_target != info_target.username:
+                change_username = True
+            username_target = info_target.username
+            id_target = str(info_target.pk)
+
+            if followers_number:
+                difference = info_target.follower_count - followers_number
+                if difference >= 100:
+                    times = math.ceil(difference / 100)
+                    max = 100 * times + 100
+
+            if return_image_base64 and info_target.profile_pic_url:
+                image_base64 = ImageUtility.stream_image_to_base64(info_target.profile_pic_url, {'width': 150, 'height': 150})
+
+            if info_target.is_private:
+                return {
+                    'error': f'profile private: {info_target.username}', 
+                    'id_target': id_target,
+                    'username_target': info_target.username, 
+                    'is_private': True}
+
+            followers = await self.api.get_followers(
+                cl, 
+                username=username_target, 
+                pk=info_target.pk, 
+                max=max,
+                query=username_action)
+            followersList:List[UserShort] = followers['list']
+            self.profile_service.update_count(cl.username,  len(followersList))
+            data = [user for user in followersList if user.username == username_action]
+            is_follower = bool(data)
+            id_action = data[0].pk if is_follower else ''
+            results = {'username_action': username_action, 'id_action': id_action, 'is_follower': is_follower}
+            if(is_follower):
+                 logger.info(f"{username_action} followed {username_target}") 
+            else:
+                logger.error(f"{username_action} not followed {username_target}")   
+
+            return {
+                'username_target': username_target,
+                'is_follower': is_follower,
+                'id_target': id_target,
+                'image_target': image_base64,
+                'follower_count_target': info_target.follower_count,
+                'change_username': change_username,
+                'username_action': username_action,
+                'id_action': id_action,
+                'followers': results
+            }
+        except Exception as e:
+            message_error = f"extract.followers_in_profile: {e}"
+            raise Exception(message_error)
+
+
             
             
     

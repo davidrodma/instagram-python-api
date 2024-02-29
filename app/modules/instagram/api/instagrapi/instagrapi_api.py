@@ -1,5 +1,5 @@
 from instagrapi import Client
-from instagrapi.types import Media
+from instagrapi.types import Media,UserShort
 from instagrapi.exceptions import LoginRequired
 from app.modules.cookie.services.cookie_service import CookieService
 from app.common.utilities.logging_utility import LoggingUtility
@@ -64,7 +64,8 @@ class InstagrapiApi:
                     try:
                         cl.login(username, password)
                     except Exception as e: 
-                        name_challenge = InstagrapiChallenge.detect_name_challenge(e)
+                        name_challenge =''
+                        #name_challenge = InstagrapiChallenge.detect_name_challenge(e)
                         raise Exception(f"login by login_via_session.get_timeline_feed LoginRequired {name_challenge} {e}")
                 except Exception as e:
                     ExceptionUtility.print_line_error()
@@ -75,7 +76,8 @@ class InstagrapiApi:
                 logger.warning(f'Cookies updated')
             except Exception as e:
                 ExceptionUtility.print_line_error()
-                name_challenge = InstagrapiChallenge.detect_name_challenge(e)
+                name_challenge =''
+                #name_challenge = InstagrapiChallenge.detect_name_challenge(e)
                 message_error = f"login by login_via_session username {username} {proxy} {name_challenge}->  Couldn't login user using session information: {e}"
                 logger.error(message_error)
 
@@ -95,7 +97,8 @@ class InstagrapiApi:
                     try:
                         cl.get_timeline_feed()
                     except Exception as e:
-                        name_challenge = InstagrapiChallenge.detect_name_challenge(e)
+                        name_challenge =''
+                        #name_challenge = InstagrapiChallenge.detect_name_challenge(e)
                         raise Exception(f"login by login_via_session->get_timeline_feed() {name_challenge} {e}")
                     login_via_pw = True
                     #cl.dump_settings(f"{username}.json")
@@ -103,7 +106,8 @@ class InstagrapiApi:
                     logger.warning(f'Cookies created')
             except Exception as e:
                 ExceptionUtility.print_line_error()
-                name_challenge = InstagrapiChallenge.detect_name_challenge(e)
+                name_challenge =''
+                #name_challenge = InstagrapiChallenge.detect_name_challenge(e)
                 message_error = f"login by login_via_pw ->  Couldn't login user using username {username} and pw, {proxy} {name_challenge}: {e}"
                 logger.error(message_error)
         
@@ -196,6 +200,41 @@ class InstagrapiApi:
             return {'total_recent_posts': len(list_posts), 'next_max_id': next_max_id, 'posts': list_posts}
 
         return list_posts
+
+    async def get_followers(
+        self,
+        cl: Client,
+        username: str = '',
+        pk: str = '',
+        query: str = None,
+        max: int = 100,
+        next_max_id:str = '',
+        return_with_next_max_id:bool = False
+    ):
+        followers:List[UserShort] = []
+        try:
+            if not pk:
+                pk = cl.user_id_from_username(username)
+
+            if query:
+                followers = cl.search_followers(user_id=pk,query=query)
+            elif return_with_next_max_id:
+                followers,next_max_id = cl.user_followers_v1_chunk(user_id=pk,max_amount=max,max_id=next_max_id)
+            else:
+                followers = cl.user_followers_v1(user_id=pk, amount=max)
+                #followersDict = cl.user_followers(user_id=pk, amount=max)
+                #followers = list(followersDict.values())
+            
+            count = len(followers)
+            logger.info(f"User followers received query {query} {pk} {count} followers (user extract {cl.username} )")
+
+            
+            return {'count': count, 'next_max_id': next_max_id, 'username_action':cl.username, 'list': followers}
+
+        except Exception as err:
+            message_error = f"get_followers {err} user extract: {cl.username} proxy {cl.proxy}"
+            logger.error(message_error)
+            raise Exception(message_error)
     
     async def user_info(self,username:str="",pk:str=""):
         try:
@@ -266,5 +305,47 @@ class InstagrapiApi:
             return result
         except Exception as e:
             raise Exception(f"api.user_last_post: {e}")
- 
+        
+
+    async def followers(self,
+        username: str = '',
+        pk: str = '',
+        query: str = None,
+        max: int = 200,
+        next_max_id:str = '',
+        return_with_next_max_id:bool = False,
+        only_username:bool = False
+        ):
+        try:
+            result = await self.instagrapi_extract.followers_extract(
+                username=username,
+                pk=pk,
+                query=query,
+                max=max,
+                next_max_id=next_max_id,
+                return_with_next_max_id=return_with_next_max_id,
+                only_username=only_username
+            )
+            return result
+        except Exception as e:
+            raise Exception(f"api.followers: {e}")
+        
+    async def followers_in_profile(self,
+        username_target: str = '', 
+        id_target: str = '', 
+        max: int = 200,
+        username_action: str = '',
+        followers_number: int = None,
+        return_image_base64: bool = False) -> dict:
+            try:
+                result = await self.instagrapi_extract.followers_in_profile_extract(
+                                username_target=username_target,
+                                id_target=id_target,
+                                max=max,
+                                username_action=username_action,
+                                followers_number=followers_number,
+                                return_image_base64=return_image_base64)
+                return result
+            except Exception as e:
+                raise Exception(f"api.followers: {e}")
 
