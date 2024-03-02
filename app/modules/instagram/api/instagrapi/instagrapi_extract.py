@@ -1,6 +1,6 @@
 from instagrapi import Client
-from instagrapi.types import UserShort
-from typing import TYPE_CHECKING, List
+from instagrapi.types import UserShort,Comment
+from typing import TYPE_CHECKING, List,Dict,Union
 from app.modules.instagram.api.instagrapi.instagrapi_profile import InstagrapiProfile
 from app.modules.instagram.api.instagrapi.instagrapi_helper import InstagrapiHelper
 from app.modules.instagram.api.instagrapi.types import UserWithImage,User,Media,MediaWithImage
@@ -67,7 +67,7 @@ class InstagrapiExtract:
                     cl = await self.login_extract()
                     attempts -= 1
                     success = True
-                    infoUser:User = self.api.get_user_info(cl, username, pk)
+                    infoUser:User = await self.api.get_user_info(cl, username, pk)
                     info = UserWithImage(**infoUser.model_dump())
                     if type=="worker":
                         pass
@@ -76,7 +76,7 @@ class InstagrapiExtract:
                     else:
                         self.profile_service.update_count(cl.username, 1, 'userInfo')
                     if hasattr(info,'profile_pic_url') and not noImage:
-                        info.image_base64 = ImageUtility.stream_image_to_base64(info.profile_pic_url, {'width': 150, 'height': 150})
+                        info.image_base64 = ImageUtility.stream_image_to_base64(info.profile_pic_url.unicode_string(), {'width': 150, 'height': 150})
                 except Exception as err:
                     success = False
                     message_error = f"user_info_extract->while: {err}"
@@ -113,7 +113,7 @@ class InstagrapiExtract:
 
                 cl = await self.login_extract()
                 try:
-                    info_user = self.api.get_user_info(cl, username, pk)
+                    info_user = await self.api.get_user_info(cl, username, pk)
                     info = UserWithImage(**info_user.model_dump())
                 except Exception as e:
                     message_error = f"user_recent_posts_extract.get_user_info {e}"
@@ -367,6 +367,222 @@ class InstagrapiExtract:
         except Exception as e:
             message_error = f"extract.followers_in_profile: {e}"
             raise Exception(message_error)
+        
+
+    async def likers_extract(self,pk:str='',url:str='') -> Dict[str, Union[str, int, List[UserShort]]]:
+        error_link = False
+        total = 0
+        try:
+            if not url and not pk:
+                raise Exception('likers url or pk post required!')
+            cl = await self.login_extract()
+            likers:List[UserShort] = await self.api.get_recent_post_likers(cl, pk=pk,url=url)
+            total = len(likers)
+            self.profile_service.update_count(cl.username,  len(likers))            
+            return {
+                'media_id': pk,
+                'total': total,
+                'likers': likers,
+            }
+        except Exception as e:
+            message_error = f"likers_extract: {e}"
+            if '404' in message_error:
+                error_link = True
+            return {
+                'error': message_error,
+                'error_link': error_link
+            }
+
+    async def likers_in_post_by_id_extract(self,pk:str,ids_likers_action: Union[List[str], str]) -> Dict[str, Union[str, List[Dict[str, Union[str, bool]]], int]]:
+        username_action = ''
+        image_action = ''
+        total = 0
+        is_liker = False
+        try:
+            cl = await self.login_extract()
+            likers:List[UserShort] = await self.api.get_recent_post_likers(cl, pk=pk)
+            total = len(likers)
+            ids_likers_action = [ids_likers_action] if isinstance(ids_likers_action, str) or isinstance(ids_likers_action, int) else ids_likers_action
+            ids_likers_action = [str(id) for id in ids_likers_action]
+            filtered = [user for user in likers if str(user.pk) in ids_likers_action]
+            results = []
+            for id in ids_likers_action:
+                data = [user for user in filtered if str(user.pk) == id]
+                is_liker = True if data else False
+                
+                username = data[0].username if is_liker else ''
+                username_action = username if is_liker else ''
+                image_action = data[0].profile_pic_url if is_liker else ''
+                is_liker = True if total >= 1000 else is_liker
+                if is_liker:
+                    logger.info(f"{id} liked in {pk} in {total} likers")
+                else:
+                    logger.error(f"{id} not liked in {pk} in {total} likers")
+                results.append({'username': username, 'id': str(id), 'is_liker': is_liker})
+
+            self.profile_service.update_count(cl.username,  len(likers))            
+
+            if image_action:
+                image_action = ImageUtility.stream_image_to_base64(image_action, {'width': 150, 'height': 150})
+
+            if results and not results[0]['is_liker']:
+                try:
+                    post_info = await self.api.get_media_id_info(cl, pk)
+                except:
+                    raise Exception(f"extract.likers_in_post_by_id_extract.get_media_id_info {e}")
+                if post_info and post_info.pk:
+                    if hasattr(post_info,'like_and_view_counts_disabled'):
+                        results[0] = {'is_liker': True, 'note': 'is_liker because like_and_view_counts_disabled'}
+
+            return {'media_id': pk, 'username_action': username_action, 'image_action': image_action, 'likers': results, 'total': total,'is_liker':is_liker}
+        except Exception as e:
+            message_error = f'extract.likers_in_post_by_id_extract {e}'
+            logger.error(message_error)
+            raise Exception(message_error)
+        
+    async def likers_in_post_extract(self,url:str, usernames_action: Union[List[str], str]='') -> Dict[str, Union[str, List[Dict[str, Union[str, bool]]], int]]:
+
+            username_action = ''
+            image_action = ''
+            total = 0
+            is_liker = False
+            try:
+                cl = await self.login_extract()
+                likers:List[UserShort] = await self.api.get_recent_post_likers(cl,url=url)
+                total = len(likers)
+                usernames_action = [usernames_action] if isinstance(usernames_action, str) else usernames_action
+                filtered = [user for user in likers if user.username in usernames_action]
+                results = []
+                for username in usernames_action:
+                    data = [user for user in filtered if user.username == username]
+                    is_liker = True if data else False
+                    
+                    username = data[0].username if is_liker else ''
+                    username_action = username if is_liker else ''
+                    image_action = data[0].profile_pic_url if is_liker else ''
+                    id = str(data[0].pk) if is_liker else ''
+                    is_liker = True if total >= 1000 else is_liker
+                    if is_liker:
+                        logger.info(f"{username} liked in {url} in {total} likers")
+                    else:
+                        logger.error(f"{username} not liked in {url} in {total} likers")
+                    results.append({'username': username, 'id': id, 'is_liker': is_liker})
+
+                self.profile_service.update_count(cl.username,  len(likers))            
+
+                if image_action:
+                    image_action = ImageUtility.stream_image_to_base64(image_action, {'width': 150, 'height': 150})
+
+                if results and not results[0]['is_liker']:
+                    try:
+                        post_info = await self.api.get_media_url_info(cl, url)
+                    except:
+                        raise Exception(f"extract.likers_in_post_extract.get_media_id_info {e}")
+                    if post_info and post_info.pk:
+                        if hasattr(post_info,'like_and_view_counts_disabled'):
+                            results[0] = {'is_liker': True, 'note': 'is_liker because like_and_view_counts_disabled'}
+
+                return {'url': url, 'username_action': username_action, 'image_action': image_action, 'likers': results, 'total': total, 'is_liker': is_liker}
+            except Exception as e:
+                message_error = f'extract.likers_in_post_extract {e}'
+                logger.error(message_error)
+                raise Exception(message_error)
+            
+
+    async def post_comments(self,
+            pk: str='',
+            url:str='', 
+            max: int = 20, 
+            next_max_id: str = '', 
+            only_text: bool = False) -> dict:
+        try:
+            cl = await self.login_extract()
+            comments = await self.api.get_comments_on_post(
+                                    cl=cl,
+                                    pk=pk,
+                                    url=url,
+                                    max=max,
+                                    next_max_id=next_max_id,
+                                    return_with_next_max_id=True
+                                )
+            result: Union[Dict[str, Union[int, str, List[Comment]]], List[str]] = []
+            list_comments:List[Comment] = comments['list']
+            if only_text:
+                result = [comment.text for comment in list_comments]
+            else:
+                result = {'count': comments['count'], 'next_max_id': comments['next_max_id'], 'list': list_comments, 'username_action': cl.username}
+            return result
+        except Exception as e:
+            message_error = f'extract.post_comments: {e}'
+            raise Exception(message_error)
+        
+
+
+    async def post_comments_by_id(self,
+            pk: str,
+            max: int = 20, 
+            next_max_id: str = '', 
+            only_text: bool = False) -> dict:
+        try:
+            result = await self.post_comments(pk=pk,max=max,next_max_id=next_max_id,only_text=only_text)
+            return result
+        except Exception as e:
+            message_error = f'extract.post_comments_by_id: {e}'
+            raise Exception(message_error)
+
+
+    async def comments_in_post_extract(self,pk:str='',url: str='', ids_action:str='', usernames_action: str='', max: int = 20) -> Dict[str, Union[str, List[str], str]]:
+        error_link = False
+        try:
+            if not url and not pk:
+                raise Exception('url or pk post required!')
+            if not ids_action and not pk:
+                raise Exception('ids_action or usernames_action required!')
+            cl = await self.login_extract()
+            post = None
+            attempts = 0
+            max_attemps = 2
+            message_error = ''
+            while attempts < max_attemps:
+                attempts += 1
+                try:
+                    post = await self.api.get_media_url_info(cl, url) if not pk else await self.api.get_media_id_info(cl, pk)
+                    break
+                except Exception as e:
+                    cl = await self.login_extract()
+                    message_error = f"comments_in_post_extract.get_media_url_info"
+                
+            
+            if not post or message_error or not hasattr(post,'pk'):
+                error_link = True
+                raise Exception(f"post/media_id não encontrada {message_error}")
+        
+            
+            if post.comments_disabled or post.commenting_disabled_for_viewer:
+                error_link = True
+                raise Exception("comentário desabilitado ou limitado para visitantes")
+            
+            if not post.user:
+                error_link = True
+                raise Exception("usuário do post limitado ou restrito por idade")
+            
+            try:
+                image_action, comments = await self.api.find_user_in_comments(cl, pk=post.pk,max=max, usernames_action=usernames_action, user_id_comment=ids_action)
+                self.profile_service.update_count(cl.username,  len(comments))            
+                return {'media_id': post.pk, 'comments': comments, 'image_action': image_action}
+            except Exception as e:
+                message_error = f"extract.comments_in_post_extract.find_user_in_comments: {e}"
+                await self.instagrapi_profile.error_handling(cl, message_error)
+                raise Exception(message_error)
+        except Exception as e:
+            return {'error': str(e), 'error_link': error_link}
+        
+
+
+    
+        
+
+
 
 
             

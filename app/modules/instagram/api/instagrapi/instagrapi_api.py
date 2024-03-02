@@ -1,5 +1,5 @@
 from instagrapi import Client
-from instagrapi.types import Media,UserShort
+from instagrapi.types import Media,UserShort,Comment
 from instagrapi.exceptions import LoginRequired
 from app.modules.cookie.services.cookie_service import CookieService
 from app.common.utilities.logging_utility import LoggingUtility
@@ -7,7 +7,7 @@ from app.modules.instagram.api.instagrapi.instagrapi_challenge import Instagrapi
 from app.modules.instagram.api.instagrapi.instagrapi_profile import InstagrapiProfile
 from app.modules.instagram.api.instagrapi.instagrapi_extract import InstagrapiExtract
 from app.common.utilities.exception_utility import ExceptionUtility
-from typing import List
+from typing import List,Union,Dict
 from app.modules.instagram.api.instagrapi.types import UserWithImage
 
 logger = LoggingUtility.get_logger("InstagrapiApi")
@@ -20,7 +20,7 @@ class InstagrapiApi:
         self.instagrapi_profile = InstagrapiProfile(self)
 
     @classmethod
-    def login_custom(self,username:str,password:str,proxy:str='',verification_mode:str='',return_ig_error:bool=False)->Client:
+    async def login_custom(self,username:str,password:str,proxy:str='',verification_mode:str='',return_ig_error:bool=False)->Client:
         print("login_custom")
         """
         Attempts to login to Instagram using either the provided session information
@@ -119,8 +119,10 @@ class InstagrapiApi:
         logger.info(f"Logged in {cl.username} { 'via password' if login_via_pw else 'via session'}")
         return cl
 
-    def get_user_info(self,cl: Client, username:str = '', pk='')->UserWithImage:
+    async def get_user_info(self,cl: Client, username:str = '', pk='')->UserWithImage:
         user:UserWithImage = None
+        if not username and not pk:
+                raise Exception('username or pk required!')
         if not pk:
             try:
                 print('username ',cl.username,'get user info by username', username)
@@ -181,6 +183,8 @@ class InstagrapiApi:
         next_max_id:str = '',
         return_with_next_max_id:bool = False
     ):
+        if not username and not pk:
+            raise Exception('username or pk required!')
         list_posts: List[Media] = []
         print('Username',username,'return_with_next_max_id',return_with_next_max_id,'max',max,'pk',pk,'next_max_id',next_max_id)
         try:
@@ -213,6 +217,8 @@ class InstagrapiApi:
     ):
         followers:List[UserShort] = []
         try:
+            if not username and not pk:
+                raise Exception('username or pk required!')
             if not pk:
                 pk = cl.user_id_from_username(username)
 
@@ -235,7 +241,95 @@ class InstagrapiApi:
             message_error = f"get_followers {err} user extract: {cl.username} proxy {cl.proxy}"
             logger.error(message_error)
             raise Exception(message_error)
+        
+    async def get_recent_post_likers(self, cl: Client, pk:str='',url:str='') -> list:
+        try:
+            if not url and not pk:
+                raise Exception('url or pk required!')
+            if not pk:
+                pk = cl.media_pk_from_url(url)
+            likers = cl.media_likers(pk)
+            logger.info(f"Recent Post Likers {pk} {len(likers)} likers")
+            return likers
+        except Exception as e:
+            message_error = f"api.get_recent_post_likers {e} user extract: {cl.username} proxy {cl.proxy}"
+            logger.error(message_error)
+            raise Exception(message_error)
+        
+
+    async def get_comments_on_post(self,
+        cl:Client, 
+        pk: str='', 
+        url: str='', 
+        max: int = 20, 
+        next_max_id:str='',
+        return_with_next_max_id:bool = False) -> List[Comment]|dict:
+        
+        list_comments: List[Comment] = []
+        try:
+            if not url and not pk:
+                raise Exception('url or pk required!')
+            
+            if not pk:
+                pk = cl.media_pk_from_url(url)
+            if not return_with_next_max_id and not next_max_id:
+               list_comments = cl.media_comments(media_id=pk, amount = max)
+            else:
+               list_comments, next_max_id = cl.media_comments_chunk(media_id=pk, max_amount=max, min_id = next_max_id)
+
+            count_comments = len(list_comments)
+            logger.info(f"Comments received: {count_comments} comments")
+                
+            if return_with_next_max_id:
+                return {'count': count_comments, 'next_max_id': next_max_id, 'list': list_comments}
+                
+            return list_comments
+        except Exception as e:
+            message_error =  f"api.get_comments_on_post {e} username_action: {cl.username}, proxy {cl.proxy}, social_id_post {pk}"
+            logger.error(message_error)
+            raise Exception(message_error)
+
     
+    async def find_user_in_comments(
+            self,
+            cl: Client, 
+            pk: str, 
+            max: int, 
+            username_comment: str = '', 
+            user_id_comment: str = ''
+        ) -> Dict[str, Union[str, List[Dict[str, Union[str, int]]]]]:
+        
+        try:
+            comments_on_post:List[Comment] = await self.get_comments_on_post(cl, pk=pk, max=max)
+            image_action = ''
+            
+            if not user_id_comment and not username_comment:
+                raise Exception('user_id_comment or username_comment required')
+            
+            arr_find = [user_id_comment] if user_id_comment else [username_comment]
+            
+            filtered = [comment for comment in comments_on_post if comment.user.pk in arr_find or comment.user.username in arr_find]
+            
+            comments = []
+            for pk_or_username in arr_find:
+                data = [comment for comment in filtered if comment.user.pk == pk_or_username or comment.user.username == pk_or_username]
+                
+                is_comment = bool(data)
+                comment_obj = data[0]
+                username = comment_obj.user.username if is_comment else username_comment
+                id = comment_obj.user.pk if is_comment else user_id_comment
+                image_action = comment_obj.user.profile_pic_url.unicode_string() if is_comment else ''
+                text = comment_obj.text if is_comment else ''
+                comment_id = comment_obj.pk if is_comment else 0
+                comment_like_count = comment_obj.like_count if is_comment else 0
+                if is_comment:
+                    logger.info(f"{id} {username} commented media {pk}")
+                comments.append({'id': id, 'username': username, 'is_comment': is_comment, 'comment_id': comment_id, 'comment_like_count': comment_like_count, 'text': text})
+            
+            return image_action, comments
+        except Exception as e:
+            raise Exception(f"api.find_user_in_comments {e}")
+        
     async def user_info(self,username:str="",pk:str=""):
         try:
             result = await self.instagrapi_extract.user_info_extract(username=username,pk=pk)
@@ -348,4 +442,106 @@ class InstagrapiApi:
                 return result
             except Exception as e:
                 raise Exception(f"api.followers: {e}")
+    
+    async def recent_post_likers(self,
+        pk: str = '', 
+        url: str = ''
+        ):
+        try:
+            result = await self.instagrapi_extract.likers_extract(pk=pk,url=url)
+            return result
+        except Exception as e:
+            raise Exception(f"api.likers_extract: {e}")
+
+    async def recent_post_likers_by_url(self,url: str):
+        try:
+            result = await self.recent_post_likers(url=url)
+            return result
+        except Exception as e:
+            raise Exception(f"api.recent_post_likers_by_url: {e}")
+        
+
+    async def likers_in_post_by_id(self,pk: str, ids_likers_action: List[str] | str):
+        try:
+            result = await self.instagrapi_extract.likers_in_post_by_id_extract(pk,ids_likers_action)
+            return result
+        except Exception as e:
+            raise Exception(f"api.likers_in_post_by_id: {e}")
+            
+    async def likers_in_post(self,url: str, usernames_action: List[str] | str):
+        try:
+            result = await self.instagrapi_extract.likers_in_post_extract(url,usernames_action)
+            return result
+        except Exception as e:
+            raise Exception(f"api.likers_in_post: {e}")
+        
+    async def post_comments(
+            self,
+            url:str='',
+            pk:str='',
+            max:int=20,
+            next_max_id:str='',
+            only_text:bool=False
+        ):
+        try:
+            result = await self.instagrapi_extract.post_comments( 
+                pk=pk,
+                url=url,
+                max=max,
+                next_max_id = next_max_id,
+                only_text= only_text 
+            )
+            return result
+        except Exception as e:
+            raise Exception(f"api.post_comments: {e}")
+        
+    async def post_comments_by_id(
+            self,
+            pk:str,
+            max:int=20,
+            next_max_id:str='',
+            only_text:bool=False
+        ):
+        try:
+            result = await self.instagrapi_extract.post_comments_by_id( 
+                pk=pk,
+                max=max,
+                next_max_id = next_max_id,
+                only_text= only_text 
+            )
+            return result
+        except Exception as e:
+            raise Exception(f"api.post_comments_by_id: {e}")
+        
+    async def comments_in_post(self,pk:str='',url:str='',ids_action:str='', usernames_action: str='', max: int = 20) -> Dict[str, Union[str, List[str], str]]:
+        try:
+            result = await self.instagrapi_extract.comments_in_post_extract( 
+                pk=pk,
+                url=url,
+                ids_action=ids_action,
+                usernames_action=usernames_action,
+                max=max
+            )
+            return result
+        except Exception as e:
+            raise Exception(f"api.comments_in_post: {e}")
+        
+
+    async def comments_in_post_by_id(self,pk:str='',ids_action:str='', max: int = 20) -> Dict[str, Union[str, List[str], str]]:
+        try:
+            result = await self.instagrapi_extract.comments_in_post_extract( 
+                pk=pk,
+                ids_action=ids_action,
+                max=max
+            )
+            return result
+        except Exception as e:
+            raise Exception(f"api.comments_in_post_by_id: {e}")
+        
+        
+        
+        
+            
+
+            
 

@@ -10,6 +10,11 @@ from app.modules.instagram.dto.post_list_dto import PostListDto
 from app.modules.instagram.dto.pk_or_username_dto import PkOrUsernameDto
 from app.modules.instagram.dto.followers_list_dto import FollowersListDto
 from app.modules.instagram.dto.followers_in_profile_dto import FollowersInProfileDto
+from app.modules.instagram.dto.pk_or_url_dto import PkOrUrlDto
+from app.modules.instagram.dto.likers_in_post_by_id_dto import LikersInPostByIdDto
+from app.modules.instagram.dto.likers_in_post_dto import LikersInPostDto
+from app.modules.instagram.dto.post_comments_dto import PostCommentsDto
+from app.modules.instagram.dto.comments_in_post_dto import CommentsInPostDto
 from app.common.utilities.json_enconder import JSONEncoder
 
 class InstagramScrapeController(Controller):
@@ -131,6 +136,108 @@ class InstagramScrapeController(Controller):
             return JSONEncoder().encode(result)
         except Exception as e:
             return ExceptionUtility.catch_response(e,f'ctrl.followers_in_profile')
+        
+    @classmethod
+    async def recent_post_likers(self):
+        try:
+            dto = PkOrUrlDto(**request.get_json())
+            result = await self.service.recent_post_likers(
+                pk=dto.id or dto.pk,
+                url=dto.url
+            )
+            return JSONEncoder().encode(result)
+        except Exception as e:
+            return ExceptionUtility.catch_response(e,f'ctrl.recent_post_likers')
+    
+    @classmethod
+    async def recent_post_likers_by_url(self):
+        try:
+            dto = UrlDto(**request.get_json())
+            result = await self.service.recent_post_likers_by_url(dto.url)
+            return JSONEncoder().encode(result)
+        except Exception as e:
+            return ExceptionUtility.catch_response(e,f'ctrl.recent_post_likers_by_url')
+    
+    @classmethod
+    async def likers_in_post_by_id(self):
+        try:
+            dto = LikersInPostByIdDto(**request.get_json())
+            result = await self.service.likers_in_post_by_id(pk=dto.pk or dto.media_id,ids_likers_action=dto.ids_likers_action)
+            return JSONEncoder().encode(result)
+        except Exception as e:
+            return ExceptionUtility.catch_response(e,f'ctrl.likers_in_post_by_id')
+    
+    @classmethod
+    async def likers_in_post(self):
+        try:
+            dto = LikersInPostDto(**request.get_json())
+            result = await self.service.likers_in_post(url=dto.url,usernames_action=dto.usernames_action)
+            return JSONEncoder().encode(result)
+        except Exception as e:
+            return ExceptionUtility.catch_response(e,f'ctrl.likers_in_post')
+        
+
+    @classmethod
+    async def post_comments(self):
+        try:
+            dto = PostCommentsDto(**request.get_json())
+            result = await self.service.post_comments(
+                pk=dto.pk or dto.id,
+                url=dto.url,
+                max=dto.max,
+                next_max_id=dto.next_max_id,
+                only_text=dto.only_text
+            )
+            return JSONEncoder().encode(result)
+        except Exception as e:
+            return ExceptionUtility.catch_response(e,f'ctrl.post_comments')
+        
+    @classmethod
+    async def post_comments_by_id(self):
+        try:
+            dto = PostCommentsDto(**request.get_json())
+            result = await self.service.post_comments_by_id(
+                pk=dto.pk or dto.id,
+                max=dto.max,
+                next_max_id=dto.next_max_id,
+                only_text=dto.only_text
+            )
+            return JSONEncoder().encode(result)
+        except Exception as e:
+            return ExceptionUtility.catch_response(e,f'ctrl.post_comments_by_id')
+    
+    @classmethod
+    async def comments_in_post(self):
+        try:
+            dto = CommentsInPostDto(**request.get_json())
+            result = await self.service.comments_in_post(
+                pk=dto.pk or dto.media_id,
+                url=dto.url,
+                usernames_action=dto.usernames_action,
+                ids_action=dto.ids_action,
+                max=dto.max
+            )
+            return JSONEncoder().encode(result)
+        except Exception as e:
+            return ExceptionUtility.catch_response(e,f'ctrl.comments_in_post')
+
+    @classmethod
+    async def comments_in_post_by_id(self):
+        try:
+            dto = CommentsInPostDto(**request.get_json())
+            result = await self.service.comments_in_post_by_id(
+                pk=dto.pk or dto.media_id,
+                url=dto.url,
+                usernames_action=dto.usernames_action,
+                ids_action=dto.ids_action,
+                max=dto.max
+            )
+            return JSONEncoder().encode(result)
+        except Exception as e:
+            return ExceptionUtility.catch_response(e,f'ctrl.comments_in_post_by_id')
+
+        
+        
         
 
 

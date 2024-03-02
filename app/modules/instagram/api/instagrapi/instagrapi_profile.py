@@ -89,7 +89,7 @@ class InstagrapiProfile:
             else:
                 print(f'{profile.username} 1º LOGIN')
                 try:
-                    cl = self.api.login_custom(
+                    cl = await self.api.login_custom(
                         username = profile.username,
                         password = profile.password,
                         proxy = proxy_url

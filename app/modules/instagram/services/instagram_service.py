@@ -1,16 +1,17 @@
 from app.modules.instagram.api.instagrapi.instagrapi_api import InstagrapiApi
+from typing import List
 
 class InstagramService:
     api = InstagrapiApi()    
     
-    def login_custom(self,
+    async def login_custom(self,
         username:str,
         password:str,
         proxy:str='',
         verification_mode:str='',
         return_ig_error:bool=False):
 
-        return self.api.login_custom(
+        return await self.api.login_custom(
             username=username,
             password=password,
             proxy=proxy,
@@ -86,6 +87,60 @@ class InstagramService:
                                 username_action=username_action,
                                 followers_number=followers_number,
                                 return_image_base64=return_image_base64)
+    
+    async def recent_post_likers(self,pk: str = '', url: str = ''):
+        return await self.api.recent_post_likers(pk=pk,url=url)
+    
+    async def recent_post_likers_by_url(self,url: str):
+         return await self.api.recent_post_likers_by_url(url)
+    
+    async def likers_in_post_by_id(self,pk: str,ids_likers_action: List[str] | str):
+         return await self.api.likers_in_post_by_id(pk,ids_likers_action)
+    
+    async def likers_in_post(self,url: str,usernames_action: List[str] | str):
+         return await self.api.likers_in_post(url,usernames_action)
+    
+    async def post_comments(
+        self,
+        pk:str='',
+        url:str='',
+        max:int=20,
+        next_max_id:str='',
+        only_text:bool=False):
+            return await self.api.post_comments(
+                 pk=pk,
+                 url=url,
+                 max=max,
+                 next_max_id=next_max_id,
+                 only_text=only_text)
+    
+    async def post_comments_by_id(
+        self,
+        pk:str,
+        max:int=20,
+        next_max_id:str='',
+        only_text:bool=False):
+            return await self.api.post_comments_by_id(
+                 pk=pk,
+                 max=max,
+                 next_max_id=next_max_id,
+                 only_text=only_text)
+    
+    async def comments_in_post(self,pk:str='',url: str='', usernames_action: str='',ids_action:str='', max: int = 20):
+        return await self.api.comments_in_post( 
+                pk=pk,
+                url=url,
+                usernames_action=usernames_action,
+                ids_action=ids_action,
+                max=max
+        )
+    
+    async def comments_in_post_by_id(self,pk:str, ids_action:str, max: int = 20):
+        return await self.api.comments_in_post_by_id( 
+                pk=pk,
+                ids_action=ids_action,
+                max=max
+        )
 
 
         
