@@ -15,6 +15,8 @@ from app.modules.instagram.dto.likers_in_post_by_id_dto import LikersInPostByIdD
 from app.modules.instagram.dto.likers_in_post_dto import LikersInPostDto
 from app.modules.instagram.dto.post_comments_dto import PostCommentsDto
 from app.modules.instagram.dto.comments_in_post_dto import CommentsInPostDto
+from app.modules.instagram.dto.comment_in_last_post import CommentInLastPostDto
+from app.modules.instagram.dto.user_commented_in_post_dto import UserCommentedInPostDto
 from app.common.utilities.json_enconder import JSONEncoder
 
 class InstagramScrapeController(Controller):
@@ -235,6 +237,33 @@ class InstagramScrapeController(Controller):
             return JSONEncoder().encode(result)
         except Exception as e:
             return ExceptionUtility.catch_response(e,f'ctrl.comments_in_post_by_id')
+    
+    @classmethod
+    async def comment_in_last_post(self):
+        try:
+            dto = CommentInLastPostDto(**request.get_json())
+            result = await self.service.comment_in_last_post(
+                username=dto.username,
+                text=dto.text,
+                media_id=dto.media_id,
+                user_id=dto.user_id
+            )
+            return JSONEncoder().encode(result)
+        except Exception as e:
+            return ExceptionUtility.catch_response(e,f'ctrl.comment_in_last_post')
+    
+    @classmethod
+    async def user_commented_in_post(self):
+        try:
+            dto = UserCommentedInPostDto(**request.get_json())
+            result = await self.service.user_commented_in_post(
+                media_id=dto.media_id,
+                username_comment=dto.username_comment,
+                max=dto.max
+            )
+            return JSONEncoder().encode(result)
+        except Exception as e:
+            return ExceptionUtility.catch_response(e,f'ctrl.comment_in_last_post')
 
         
         

@@ -1,5 +1,5 @@
 from instagrapi import Client
-from instagrapi.types import Media,UserShort,Comment
+from instagrapi.types import Media,UserShort,Comment,Story
 from instagrapi.exceptions import LoginRequired
 from app.modules.cookie.services.cookie_service import CookieService
 from app.common.utilities.logging_utility import LoggingUtility
@@ -153,6 +153,16 @@ class InstagrapiApi:
             logger.error(message_error)
             raise Exception(f"api.get_media_id_info target {media_id} (extract username {cl.username} proxy {cl.proxy}): {message_error}")
     
+    async def get_story_id_info(self,cl: Client, media_id: str)->Story:
+        try:
+            result = cl.story_info(media_id)
+            logger.info(f'Story Info received {media_id}')
+            return result
+        except Exception as err:
+            message_error = f'ERROR get_story_id_info {err}'
+            logger.error(message_error)
+            raise Exception(f"api.get_story_id_info target {media_id} (extract username {cl.username} proxy {cl.proxy}): {message_error}")
+    
     async def get_media_url_info(self,cl: Client, url: str)->Media:
         try:
             media_id = cl.media_pk_from_url(url)
@@ -189,8 +199,12 @@ class InstagrapiApi:
         print('Username',username,'return_with_next_max_id',return_with_next_max_id,'max',max,'pk',pk,'next_max_id',next_max_id)
         try:
             if not pk:
-                pk = cl.user_id_from_username(username)
-            list_posts,next_max_id = cl.user_medias_paginated(user_id=pk, amount=max, end_cursor=next_max_id)    
+                #pk = cl.user_id_from_username(username)
+                info_user = cl.user_info_by_username_v1(username=username)
+                if info_user.is_private:
+                    raise Exception('profile is private!')
+                pk = info_user.pk
+            list_posts,next_max_id = cl.user_medias_paginated(user_id=pk, amount=max, end_cursor=next_max_id)
         except (Exception) as err:
             message_error = f"api.get_user_recent_posts_custom.user_medias_paginated {err}"
             logger.error(message_error)
@@ -220,7 +234,11 @@ class InstagrapiApi:
             if not username and not pk:
                 raise Exception('username or pk required!')
             if not pk:
-                pk = cl.user_id_from_username(username)
+                #pk = cl.user_id_from_username(username)
+                info_user = cl.user_info_by_username_v1(username=username)
+                if info_user.is_private:
+                    raise Exception('profile is private!')
+                pk = info_user.pk
 
             if query:
                 followers = cl.search_followers(user_id=pk,query=query)
@@ -288,6 +306,33 @@ class InstagrapiApi:
             message_error =  f"api.get_comments_on_post {e} username_action: {cl.username}, proxy {cl.proxy}, social_id_post {pk}"
             logger.error(message_error)
             raise Exception(message_error)
+        
+    async def get_recent_stories(
+        self,
+        cl: Client,
+        username: str = '',
+        max: int = 1,
+        pk: Union[str, int] = '',
+        media_id: Union[str, int] = ''
+    ) -> List[Story]:
+        list = []
+        try:
+            if not pk:
+                info_user = cl.user_info_by_username_v1(username=username)
+                if info_user.is_private:
+                    raise Exception('profile is private!')
+                pk = info_user.pk
+            if media_id:
+                story = await self.get_story_id_info(cl, media_id)
+                list.append(story)
+            else:
+                list = cl.user_stories(user_id=pk,amount=max)
+        except Exception as err:
+            message_error = f'get_recent_stories: {err}'
+            logger.error(message_error)
+            raise Exception(message_error)
+        logger.info(f"User recent stories received {username} {pk} {len(list)} stories")
+        return list
 
     
     async def find_user_in_comments(
@@ -302,20 +347,16 @@ class InstagrapiApi:
         try:
             comments_on_post:List[Comment] = await self.get_comments_on_post(cl, pk=pk, max=max)
             image_action = ''
-            
             if not user_id_comment and not username_comment:
                 raise Exception('user_id_comment or username_comment required')
-            
             arr_find = [user_id_comment] if user_id_comment else [username_comment]
-            
             filtered = [comment for comment in comments_on_post if comment.user.pk in arr_find or comment.user.username in arr_find]
-            
             comments = []
+            is_comment = False
             for pk_or_username in arr_find:
                 data = [comment for comment in filtered if comment.user.pk == pk_or_username or comment.user.username == pk_or_username]
-                
                 is_comment = bool(data)
-                comment_obj = data[0]
+                comment_obj:Comment = data[0] if is_comment else None
                 username = comment_obj.user.username if is_comment else username_comment
                 id = comment_obj.user.pk if is_comment else user_id_comment
                 image_action = comment_obj.user.profile_pic_url.unicode_string() if is_comment else ''
@@ -323,10 +364,10 @@ class InstagrapiApi:
                 comment_id = comment_obj.pk if is_comment else 0
                 comment_like_count = comment_obj.like_count if is_comment else 0
                 if is_comment:
+                    username_comment = username
                     logger.info(f"{id} {username} commented media {pk}")
                 comments.append({'id': id, 'username': username, 'is_comment': is_comment, 'comment_id': comment_id, 'comment_like_count': comment_like_count, 'text': text})
-            
-            return image_action, comments
+            return image_action, comments, is_comment, username_comment
         except Exception as e:
             raise Exception(f"api.find_user_in_comments {e}")
         
@@ -513,7 +554,7 @@ class InstagrapiApi:
         except Exception as e:
             raise Exception(f"api.post_comments_by_id: {e}")
         
-    async def comments_in_post(self,pk:str='',url:str='',ids_action:str='', usernames_action: str='', max: int = 20) -> Dict[str, Union[str, List[str], str]]:
+    async def comments_in_post(self,pk:str='',url:str='',ids_action:str='', usernames_action: str='', max: int = 20):
         try:
             result = await self.instagrapi_extract.comments_in_post_extract( 
                 pk=pk,
@@ -527,7 +568,7 @@ class InstagrapiApi:
             raise Exception(f"api.comments_in_post: {e}")
         
 
-    async def comments_in_post_by_id(self,pk:str='',ids_action:str='', max: int = 20) -> Dict[str, Union[str, List[str], str]]:
+    async def comments_in_post_by_id(self,pk:str='',ids_action:str='', max: int = 20):
         try:
             result = await self.instagrapi_extract.comments_in_post_extract( 
                 pk=pk,
@@ -537,6 +578,29 @@ class InstagrapiApi:
             return result
         except Exception as e:
             raise Exception(f"api.comments_in_post_by_id: {e}")
+        
+    async def comment_in_last_post(self,username:str,text:str,media_id:str='',user_id:str=''):
+        try:
+            result = await self.instagrapi_extract.comment_in_last_post_extract( 
+                username=username,
+                text=text,
+                media_id=media_id,
+                user_id=user_id
+            )
+            return result
+        except Exception as e:
+            raise Exception(f"api.comment_in_last_post_extract: {e}")
+        
+    async def user_commented_in_post(self,media_id:str,username_comment:str,max:int=200):
+        try:
+            result = await self.instagrapi_extract.user_commented_in_post_extract( 
+                media_id=media_id,
+                username_comment=username_comment,
+                max=max
+            )
+            return result
+        except Exception as e:
+            raise Exception(f"api.user_commented_in_post: {e}")
         
         
         

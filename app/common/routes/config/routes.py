@@ -47,3 +47,5 @@ class Routes:
         app.add_url_rule('/instagram/post-comments', 'instagram.post_comments', InstagramScrapeController.post_comments, methods=['GET'])
         app.add_url_rule('/instagram/post-comments-by-id', 'instagram.post_comments_by_id', InstagramScrapeController.post_comments_by_id, methods=['GET'])
         app.add_url_rule('/instagram/comments-in-post', 'instagram.comments_in_post', InstagramScrapeController.comments_in_post, methods=['GET'])
+        app.add_url_rule('/instagram/comment-in-last-post', 'instagram.comment_in_last_post', InstagramScrapeController.comment_in_last_post, methods=['GET'])
+        app.add_url_rule('/instagram/user-commented-in-post', 'instagram.user_commented_in_post', InstagramScrapeController.user_commented_in_post, methods=['GET'])

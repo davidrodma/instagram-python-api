@@ -141,6 +141,21 @@ class InstagramService:
                 ids_action=ids_action,
                 max=max
         )
+    
+    async def comment_in_last_post(self,username:str,text:str,media_id:str='', user_id:str=''):
+        return await self.api.comment_in_last_post( 
+                username=username,
+                text=text,
+                media_id=media_id,
+                user_id=user_id
+        )
+    
+    async def user_commented_in_post(self,media_id:str,username_comment:str,max:int=200):
+        return await self.api.user_commented_in_post( 
+                media_id=media_id,
+                username_comment=username_comment,
+                max=max
+        )
 
 
         

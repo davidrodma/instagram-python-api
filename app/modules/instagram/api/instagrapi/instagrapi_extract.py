@@ -531,7 +531,15 @@ class InstagrapiExtract:
             raise Exception(message_error)
 
 
-    async def comments_in_post_extract(self,pk:str='',url: str='', ids_action:str='', usernames_action: str='', max: int = 20) -> Dict[str, Union[str, List[str], str]]:
+    async def comments_in_post_extract(
+            self,
+            pk:str='',
+            url: str='', 
+            ids_action:str='', 
+            usernames_action: str='', 
+            max: int = 20
+        ) -> Dict[str, Union[str, List[str], str]]:
+
         error_link = False
         try:
             if not url and not pk:
@@ -567,9 +575,9 @@ class InstagrapiExtract:
                 raise Exception("usuário do post limitado ou restrito por idade")
             
             try:
-                image_action, comments = await self.api.find_user_in_comments(cl, pk=post.pk,max=max, usernames_action=usernames_action, user_id_comment=ids_action)
+                image_action, comments, is_comment, username_comment = await self.api.find_user_in_comments(cl, pk=post.pk,max=max, username_comment=usernames_action, user_id_comment=ids_action)
                 self.profile_service.update_count(cl.username,  len(comments))            
-                return {'media_id': post.pk, 'comments': comments, 'image_action': image_action}
+                return {'media_id': post.pk,'is_comment':is_comment,'username_comment':username_comment, 'comments': comments, 'image_action': image_action}
             except Exception as e:
                 message_error = f"extract.comments_in_post_extract.find_user_in_comments: {e}"
                 await self.instagrapi_profile.error_handling(cl, message_error)
@@ -578,9 +586,154 @@ class InstagrapiExtract:
             return {'error': str(e), 'error_link': error_link}
         
 
+    async def comment_in_last_post_extract(
+            self,
+            username: str, 
+            text: str, 
+            media_id: str = '', 
+            user_id:str = ''
+        ):
+        
+        success = False
+        attempts = 3
+        success = False
+        comments = []
+        is_comment = False
+        image = ''
+        code = None
+        last_post:Media = None
+        cl:Client = None
+        try:
+            while not success:
+                try:
+                    success = True
+                    attempts -= 1
+                    cl = await self.login_extract()
+
+                    if not media_id:
+                        posts_media:List[Media] = await self.api.get_user_recent_posts_custom(
+                                            cl=cl, 
+                                            pk=user_id,
+                                            username=username,
+                                            max=1)
+                        last_post = posts_media[0]
+                        media_id = last_post.pk
+                        code = last_post.code
+                        if last_post.commenting_disabled_for_viewer or last_post.comments_disabled:
+                            raise Exception("comentário desabilitado ou limitado para visitantes")
+
+                    image, comments = await self.api.find_user_in_comments(cl, pk=media_id,max=100, username_comment=username, user_id_comment=user_id)
+                    self.profile_service.update_count(cl.username, 1)
+                    filtered = [comment for comment in comments if  comment['text'] and text.strip().upper() == comment['text'].strip().upper()]
+                    is_comment = bool(filtered)
+                except Exception as e:
+                    message_error = f"extract.comment_in_last_post_extract(while): {e} "
+                    logger.error(message_error)
+                    if cl:
+                        await self.instagrapi_profile.error_handling(cl, message_error)
+                    obj_last_post = await self.user_last_post_extract(username)
+                    if 'error' in obj_last_post:
+                        return obj_last_post
+                    last_post = obj_last_post['last_post']
+                    if last_post.commenting_disabled_for_viewer or last_post.comments_disabled:
+                        raise Exception("comentário desabilitado ou limitado para visitantes")
+                    if attempts > 0:
+                        success=False
+                    else:
+                        raise Exception(message_error)
+        except Exception as e:
+            message_error = f"extract.comment_in_last_post_extract: {e} "
+            logger.error(message_error)
+            raise Exception(message_error)
 
     
+        return {
+            'post_id': media_id,
+            'post_code': code,
+            'post_image': image,
+            'username': username,
+            'text': text,
+            'is_comment': is_comment,
+            'total_comments': len(comments)
+        }
+    
+
+    async def user_commented_in_post_extract(self,media_id:str,username_comment:str,max:int=200):
+        try:
+            return await self.comments_in_post_extract(pk=media_id,usernames_action=username_comment,max=max)
+        except Exception as e:
+            message_error = f"extract.user_commented_in_post_extract: {e} "
+            logger.error(message_error)
+            raise Exception(message_error)
         
+    async def user_recent_stories_type(self,username: str, max: int = 20, pk: str or None = None, media_id: str or int or None = None):
+        try:
+            print(' userRecentStoriesType init username', username, 'pk', pk)
+            ig = None
+            attempts = 3
+            stories = None
+            info = None
+            while attempts >= 0:
+                attempts -= 1
+                success = True
+
+                ig = await IgTools.login_extract()
+                try:
+                    info = await get_user_info(ig, username, pk)
+                except Exception as e:
+                    message_error = str(e)
+                    success = False
+                    if attempts <= 0 or 'not found' in message_error or 'user info response' in message_error:
+                        await IgTools.error_handling(ig, message_error)
+                        raise Exception('usuário do story parece que não foi encontrado (404 Not Found) : ' + message_error)
+
+                if not info or not success:
+                    continue
+
+                if info and info.profile_pic_url:
+                    info.image_base64 = await Utils.stream_image_to_base64(info.profile_pic_url, width=150, height=150)
+                    if not pk:
+                        pk = str(info.pk)
+
+                if info.is_private:
+                    print(f'{username} {pk} privado:', info.is_private)
+                    return {
+                        'error': 'profile is private!',
+                        'is_private': True,
+                        'user': info
+                    }
+
+                stories = await get_recent_stories(ig, username, max, pk, media_id)
+                if stories.error:
+                    success = False
+                    if attempts <= 0:
+                        await IgTools.error_handling(ig, stories.error)
+                        raise Exception('stories não encontrado: ' + stories.error)
+
+                if success:
+                    attempts = -1
+
+            if not stories or not stories[0]:
+                return {
+                    'user': info,
+                    'error': 'stories não encontrado',
+                    'total_recent_stories': 0
+                }
+
+            stories = await asyncio.gather(*[async_get_image_base64_from_post(story) for story in stories])
+
+            await ProfileController.update_count(ig.loggedInUser.inputLogin, len(stories))
+            return {
+                'total_recent_stories': len(stories),
+                'stories': stories,
+                'user': info
+            }
+        except Exception as e:
+            return {'error': str(e)}
+
+
+
+            
 
 
 
