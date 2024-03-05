@@ -85,6 +85,10 @@ class ProfileService:
         return self.repository.get_one_random(filter)
     
     @classmethod
+    def get_by_username(self, username:str)->Profile:
+        return self.find_one({"username":username})
+    
+    @classmethod
     def get_random_profile(self)->Profile:
         try:
             obj =  self.get_one_random({"status":1})
@@ -140,7 +144,7 @@ class ProfileService:
         )  
 
     @classmethod
-    def increment_count(self,username: str, quantity: int, type: str = '') -> dict:
+    def increment_count(self,username: str, quantity: int, type: str = '') -> Profile:
         try:
             update = {
                 'countUsed': quantity,
@@ -159,7 +163,7 @@ class ProfileService:
             raise Exception(f"incrementCount: {e}")
 
     @classmethod  
-    def update_count(self,username: str, quantity: int, type: str = '') -> None:
+    def update_count(self,username: str, quantity: int, type: str = '') -> Profile:
         try:
             profile = self.increment_count(username, quantity, type)
             return profile

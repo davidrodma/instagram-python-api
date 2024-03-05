@@ -156,7 +156,29 @@ class InstagramService:
                 username_comment=username_comment,
                 max=max
         )
-
+    
+    async def user_recent_stories(self,username: str, max: int = 20, pk: str = '', media_id: str = ''):
+        return await self.api.user_recent_stories( 
+                username=username,
+                pk=pk,
+                max=max,
+                media_id=media_id
+        )
+    
+    async def posts_by_tag(self,tag: str, max: int = 27, next_max_id: str = '', tab: str = 'recent'):
+        return await self.api.posts_by_tag( 
+                tag=tag,
+                max=max,
+                next_max_id=next_max_id,
+                tab=tab
+        )
+    
+    async def extract_biographies(self,username: str, quantity: int, min_char: int = 0):
+        return await self.api.extract_biographies( 
+            username=username,
+            quantity=quantity,
+            min_char=min_char
+        )
 
         
     

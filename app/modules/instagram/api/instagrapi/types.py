@@ -1,4 +1,4 @@
-from instagrapi.types import User,Media,Resource
+from instagrapi.types import User,Media,Resource,Story
 from typing import List
 
 class UserWithImage(User):
@@ -13,3 +13,6 @@ class MediaWithImage(Media):
     image_base64: str  = ''
     resources:List[ResourceWithImage]
     items:List = []
+
+class StoryWithImage(Story):
+    image_base64: str  = ''

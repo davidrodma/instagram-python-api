@@ -17,6 +17,9 @@ from app.modules.instagram.dto.post_comments_dto import PostCommentsDto
 from app.modules.instagram.dto.comments_in_post_dto import CommentsInPostDto
 from app.modules.instagram.dto.comment_in_last_post import CommentInLastPostDto
 from app.modules.instagram.dto.user_commented_in_post_dto import UserCommentedInPostDto
+from app.modules.instagram.dto.user_recent_stories_dto import UserRecentStoriesDto
+from app.modules.instagram.dto.posts_by_tag_dto import PostsByTagDto
+from app.modules.instagram.dto.extract_biographies_dto import ExtractBiographiesDto
 from app.common.utilities.json_enconder import JSONEncoder
 
 class InstagramScrapeController(Controller):
@@ -264,6 +267,47 @@ class InstagramScrapeController(Controller):
             return JSONEncoder().encode(result)
         except Exception as e:
             return ExceptionUtility.catch_response(e,f'ctrl.comment_in_last_post')
+   
+    @classmethod
+    async def user_recent_stories(self):
+        try:
+            dto = UserRecentStoriesDto(**request.get_json())
+            result = await self.service.user_recent_stories( 
+                username=dto.username,
+                pk=dto.pk,
+                max=dto.max,
+                media_id=dto.media_id
+            )
+            return JSONEncoder().encode(result)
+        except Exception as e:
+            return ExceptionUtility.catch_response(e,f'ctrl.user_recent_stories')
+    
+    @classmethod
+    async def posts_by_tag(self):
+        try:
+            dto = PostsByTagDto(**request.get_json())
+            result = await self.service.posts_by_tag( 
+                tag=dto.tag,
+                max=dto.max,
+                next_max_id=dto.next_max_id,
+                tab=dto.tab
+            )
+            return JSONEncoder().encode(result)
+        except Exception as e:
+            return ExceptionUtility.catch_response(e,f'ctrl.posts_by_tag')
+    
+    @classmethod
+    async def extract_biographies(self):
+        try:
+            dto = ExtractBiographiesDto(**request.get_json())
+            result = await self.service.extract_biographies( 
+                username=dto.username,
+                quantity=dto.quantity,
+                min_char=dto.min_char
+            )
+            return JSONEncoder().encode(result)
+        except Exception as e:
+            return ExceptionUtility.catch_response(e,f'ctrl.extract_biographies')
 
         
         

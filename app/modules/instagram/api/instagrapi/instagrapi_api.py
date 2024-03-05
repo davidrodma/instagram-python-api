@@ -239,7 +239,7 @@ class InstagrapiApi:
                 if info_user.is_private:
                     raise Exception('profile is private!')
                 pk = info_user.pk
-
+            logger.warning(f"get_followers username {username} pk {pk} query={query} max={max} (user extract {cl.username} )")
             if query:
                 followers = cl.search_followers(user_id=pk,query=query)
             elif return_with_next_max_id:
@@ -257,6 +257,48 @@ class InstagrapiApi:
 
         except Exception as err:
             message_error = f"get_followers {err} user extract: {cl.username} proxy {cl.proxy}"
+            logger.error(message_error)
+            raise Exception(message_error)
+        
+
+    async def get_following(
+        self,
+        cl: Client,
+        username: str = '',
+        pk: str = '',
+        query: str = None,
+        max: int = 100,
+        next_max_id:str = '',
+        return_with_next_max_id:bool = False
+    ):
+        following:List[UserShort] = []
+        try:
+            if not username and not pk:
+                raise Exception('username or pk required!')
+            if not pk:
+                #pk = cl.user_id_from_username(username)
+                info_user = cl.user_info_by_username_v1(username=username)
+                if info_user.is_private:
+                    raise Exception('profile is private!')
+                pk = info_user.pk
+            logger.warning(f"get_following username {username} pk {pk} query={query} max={max} (user extract {cl.username} )")
+            if query:
+                following = cl.search_following(user_id=pk,query=query)
+            elif return_with_next_max_id:
+                following,next_max_id = cl.user_following_v1_chunk(user_id=pk,max_amount=max,max_id=next_max_id)
+            else:
+                following = cl.user_following_v1(user_id=pk, amount=max)
+                #followersDict = cl.user_followers(user_id=pk, amount=max)
+                #followers = list(followersDict.values())
+            
+            count = len(following)
+            logger.info(f"User following received query {query} {pk} {count} following (user extract {cl.username} )")
+
+            
+            return {'count': count, 'next_max_id': next_max_id, 'username_action':cl.username, 'list': following}
+
+        except Exception as err:
+            message_error = f"api.get_following {err} user extract: {cl.username} proxy {cl.proxy}"
             logger.error(message_error)
             raise Exception(message_error)
         
@@ -333,6 +375,29 @@ class InstagrapiApi:
             raise Exception(message_error)
         logger.info(f"User recent stories received {username} {pk} {len(list)} stories")
         return list
+    
+    async def get_posts_by_tag(
+        self,
+        cl: Client,
+        tag:str,
+        next_max_id:str = '',
+        max:int = 27,
+        tab:str = 'recent'
+    ):        
+        list_posts:List[Media] = []
+        count_posts = 0
+        try:
+            list_posts, next_max_id = cl.hashtag_medias_v1_chunk(name=tag, max_amount=max, tab_key=tab, max_id = next_max_id)
+            count_posts = len(list_posts)
+        except Exception as err:
+            message_error = f'get_posts_by_tag: {err}'
+            logger.error(message_error)
+            raise Exception(message_error)
+
+        logger.info(f"Hashag {tag} {count_posts} posts received")
+
+        return {'count': count_posts, 'next_max_id': next_max_id, 'list': list_posts}
+
 
     
     async def find_user_in_comments(
@@ -601,6 +666,43 @@ class InstagrapiApi:
             return result
         except Exception as e:
             raise Exception(f"api.user_commented_in_post: {e}")
+    
+    async def user_recent_stories(self,username: str, max: int = 20, pk: str = '', media_id: str = ''):
+        try:
+            result = await self.instagrapi_extract.user_recent_stories_extract( 
+                username=username,
+                pk=pk,
+                max=max,
+                media_id=media_id
+            )
+            return result
+        except Exception as e:
+            raise Exception(f"api.user_recent_stories: {e}")
+        
+    async def posts_by_tag(self,tag: str, max: int = 27, next_max_id: str = '', tab: str = 'recent'):
+        try:
+            result = await self.instagrapi_extract.posts_by_tag_extract( 
+                tag=tag,
+                max=max,
+                next_max_id=next_max_id,
+                tab=tab
+            )
+            return result
+        except Exception as e:
+            raise Exception(f"api.posts_by_tag: {e}")
+        
+
+    async def extract_biographies(self,username: str, quantity: int, min_char: int = 0):
+        try:
+            result = await self.instagrapi_extract.biographies_extract( 
+                username=username,
+                quantity=quantity,
+                min_char=min_char,
+            )
+            return result
+        except Exception as e:
+            raise Exception(f"api.extract_biographie: {e}")
+
         
         
         

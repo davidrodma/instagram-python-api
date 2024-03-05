@@ -1,7 +1,7 @@
 from app.common.utilities.image_utility import ImageUtility
-from app.modules.instagram.api.instagrapi.types import Media,MediaWithImage
+from app.modules.instagram.api.instagrapi.types import Media,MediaWithImage,StoryWithImage
 from instagrapi import Client
-
+from typing import Union
 class InstagrapiHelper():
     @classmethod
     def test_proxy(self,proxy:str):
@@ -14,7 +14,7 @@ class InstagrapiHelper():
         return before_ip!=after_ip
     
     @classmethod
-    async def get_image_base64_from_post(self,post:Media, size: dict = {"width": 150, "height": 150}):
+    async def get_image_base64_from_post(self,post:Union[MediaWithImage,StoryWithImage], size: dict = {"width": 150, "height": 150}):
         url = ''
         if hasattr(post,'thumbnail_url'):
             url = post.thumbnail_url
@@ -25,6 +25,6 @@ class InstagrapiHelper():
         return ImageUtility.stream_image_to_base64(url, size)
     
     @classmethod
-    async def merge_image_base64(self,post:MediaWithImage):
+    async def merge_image_base64(self,post:Union[MediaWithImage,StoryWithImage]):
         post.image_base64 = await InstagrapiHelper.get_image_base64_from_post(post)
         return post
