@@ -179,6 +179,12 @@ class InstagramService:
             quantity=quantity,
             min_char=min_char
         )
-
+    
+    async def profile_seen_stories_action(self,username:str,pk:str,media_id:str,max:int=1):
+        return await  self.api.profile_seen_stories_action(
+            username=username,
+            pk=pk,
+            media_id=media_id,
+            max = max)
         
     

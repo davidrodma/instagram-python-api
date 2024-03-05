@@ -5,9 +5,10 @@ from app.modules.config.services.config_service import ConfigService
 from app.modules.cookie.services.cookie_service import CookieService
 from app.modules.instagram.utilities.instagram_utility import InstagramUtility
 from app.modules.profile.models.profile import Profile
+from app.common.utilities.exception_utility import ExceptionUtility
+from app.common.utilities.logging_utility import LoggingUtility
 from instagrapi import Client
 import asyncio
-from app.common.utilities.logging_utility import LoggingUtility
 
 logger = LoggingUtility.get_logger("InstagrapiProfile")
 
@@ -123,13 +124,15 @@ class InstagrapiProfile:
                 self.cookie_service.save_state(username=cl.username,state=cl.get_settings(),pk=cl.user_id)
                 del self.profiles_cl[username]
         except Exception as e:
-            print('delete_memory_session', e)
-            raise Exception(f'delete_memory_session: {e}')
+            ExceptionUtility.print_line_error()
+            message_error = f'delete_memory_session: {e}'
+            logger.error(message_error)
+            raise Exception(message_error)
         
 
     async def error_login(self,message_error: str, profile: Profile, proxy_url: str = None):
-        message_error = f"{message_error.lower()} username {profile.username} proxy {proxy_url}"
-        print(f"LOGIN ERROR: username: {profile.username}, proxy: {proxy_url}, msg: {message_error}\n")
+        message_error = f"LOGIN ERROR: {message_error.lower()} username {profile.username} proxy {proxy_url}"
+        logger.error(message_error)
         
         if InstagramUtility.is_error_prevent_login(message_error):
             if '429' in message_error or 'wait a few minutes' in message_error:
@@ -187,13 +190,24 @@ class InstagrapiProfile:
             if self.profiles_cl.get(username):
                 del self.profiles_cl[username]
         except Exception as e:
-            print('clean_session', e)
-            raise Exception(f'clean_session: {e}')
+            ExceptionUtility.print_line_error()
+            message_error = f'clean_session: {e}'
+            logger.error(message_error)
+            raise Exception(message_error)
+        
+    async def seen_stories_action(self,username:str,pk:str,media_id:str,max:int=1):
+        try:
+            cl = await self.login(random_after_error=True)
+            try:
+                result = await self.api.seen_stories(cl, username, max, pk, media_id)
+                return result
+            except Exception as e:
+                message_error = f'errorHandling action_seen_stories.seen_stories: {e}'
+                self.profile_service.note_error(cl.username, message_error)
+        except Exception as e:
+            ExceptionUtility.print_line_error()
+            message_error = f'action_seen_stories: {e}'
+            logger.error(message_error)
+            raise Exception(message_error)
 
 
-
-
-
-    
-
-    

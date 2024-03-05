@@ -3,7 +3,7 @@ from instagrapi.types import UserShort,Comment
 from typing import TYPE_CHECKING, List,Dict,Union
 from app.modules.instagram.api.instagrapi.instagrapi_profile import InstagrapiProfile
 from app.modules.instagram.api.instagrapi.instagrapi_helper import InstagrapiHelper
-from app.modules.instagram.api.instagrapi.types import UserWithImage,User,Media,MediaWithImage,Story,StoryWithImage
+from app.modules.instagram.api.instagrapi.types import UserWithImage,User,Media,MediaWithImage,StoryWithImage
 from app.modules.profile.services.profile_service import ProfileService
 from app.common.utilities.exception_utility import ExceptionUtility
 from app.common.utilities.image_utility import ImageUtility

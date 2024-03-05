@@ -397,9 +397,32 @@ class InstagrapiApi:
         logger.info(f"Hashag {tag} {count_posts} posts received")
 
         return {'count': count_posts, 'next_max_id': next_max_id, 'list': list_posts}
-
-
     
+    async def seen_stories(
+            self,
+            cl: Client, 
+            username: str = '', 
+            max:int= 1,
+            pk: str = '', 
+            media_id: str = ''):
+            seen_result = None
+            stories:List[Story] = []
+            try:
+                if not pk:
+                    info = await self.get_user_info(cl, username)
+                    pk = info.pk
+                stories = await self.get_recent_stories(cl=cl, username=username, max=max, pk=pk, media_id=media_id)
+                stories_pk = [int(story.pk) for story in stories]
+                seen_result = cl.story_seen(stories_pk)
+            except Exception as err:
+                message_error = f'seen_stories {err}'
+                logger.error(message_error)
+                raise Exception(message_error)
+            
+            logger.info(f'{cl.username} seen {username} {pk} {len(stories)} stories')
+
+            return {'status': 'ok' if seen_result else 'error', 'list': stories, 'count': len(stories),'seen_result':seen_result}
+
     async def find_user_in_comments(
             self,
             cl: Client, 
@@ -702,7 +725,18 @@ class InstagrapiApi:
             return result
         except Exception as e:
             raise Exception(f"api.extract_biographie: {e}")
+        
 
+    async def profile_seen_stories_action(self,username:str,pk:str,media_id:str,max:int=1):
+        try:
+            result = await  self.instagrapi_profile.seen_stories_action(
+                username=username,
+                pk=pk,
+                media_id=media_id,
+                max = max)
+            return result
+        except Exception as e:
+            raise Exception(f"api.profile_action_seen_stories: {e}")
         
         
         
