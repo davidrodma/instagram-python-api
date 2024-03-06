@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING,Dict
+from typing import Dict
 from app.modules.profile.services.profile_service import ProfileService
 from app.modules.proxy.services.proxy_service import ProxyService
 from app.modules.config.services.config_service import ConfigService
@@ -7,23 +7,26 @@ from app.modules.instagram.utilities.instagram_utility import InstagramUtility
 from app.modules.profile.models.profile import Profile
 from app.common.utilities.exception_utility import ExceptionUtility
 from app.common.utilities.logging_utility import LoggingUtility
+from app.modules.instagram.api.instagrapi.instagrapi_api import InstagrapiApi
 from instagrapi import Client
 import asyncio
 
 logger = LoggingUtility.get_logger("InstagrapiProfile")
 
-if TYPE_CHECKING:
-    from app.modules.instagram.api.instagrapi.instagrapi_api import InstagrapiApi
+#if TYPE_CHECKING:
+#    from app.modules.instagram.api.instagrapi.instagrapi_api import InstagrapiApi
 
 class InstagrapiProfile:
+    api = InstagrapiApi()
     profile_service = ProfileService()
     proxy_service = ProxyService()
     config_service = ConfigService()
     cookie_service = CookieService()
     profiles_cl: Dict[str, Client] = {}
 
-    def __init__(self,api:"InstagrapiApi"):
-        self.api = api
+
+    #def __init__(self,api:"InstagrapiApi"):
+    #    self.api = api
  
 
     async def login(self,profile:Profile = None, random_after_error: bool = False, proxy_url:str = ""):

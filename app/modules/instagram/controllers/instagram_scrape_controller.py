@@ -2,7 +2,7 @@ from flask import request
 from app.common.controllers.controller import Controller
 from app.common.utilities.exception_utility import ExceptionUtility
 from app.modules.instagram.dto.username_dto import UsernameDto
-from app.modules.instagram.services.instagram_service import InstagramService
+from app.modules.instagram.services.instagram_scrape_service import InstagramScrapeService
 from app.modules.instagram.dto.username_dto import UsernameDto
 from app.modules.instagram.dto.id_dto import IdDto
 from app.modules.instagram.dto.url_dto import UrlDto
@@ -23,7 +23,7 @@ from app.modules.instagram.dto.extract_biographies_dto import ExtractBiographies
 from app.common.utilities.json_enconder import JSONEncoder
 
 class InstagramScrapeController(Controller):
-    service = InstagramService()
+    service = InstagramScrapeService()
 
     @classmethod
     async def user_info(self):

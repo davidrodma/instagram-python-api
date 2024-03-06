@@ -5,6 +5,7 @@ from app.modules.profile.controllers.profile_controller import ProfileController
 from app.modules.proxy.controllers.proxy_controller import ProxyController
 from app.modules.cookie.controllers.cookie_controller import CookieController
 from app.modules.instagram.controllers.instagram_scrape_controller import InstagramScrapeController
+from app.modules.instagram.controllers.instagram_profile_controller import InstagramProfileController
 from app.modules.config.controllers.config_controller import ConfigController
 
 class Routes:
@@ -52,3 +53,6 @@ class Routes:
         app.add_url_rule('/instagram/scrape/user-recent-stories', 'instagram.user_recent_stories', InstagramScrapeController.user_recent_stories, methods=['GET'])
         app.add_url_rule('/instagram/scrape/posts-by-tag', 'instagram.posts_by_tag', InstagramScrapeController.posts_by_tag, methods=['GET'])
         app.add_url_rule('/instagram/scrape/extract-biographies', 'instagram.extract_biographies', InstagramScrapeController.extract_biographies, methods=['GET'])
+
+        #Instagram - Profile Action
+        app.add_url_rule('/instagram/profile/seen-stories-action', 'instagram.seen_stories_action', InstagramProfileController.seen_stories_action, methods=['GET'])
