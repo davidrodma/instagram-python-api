@@ -1,10 +1,10 @@
 from app.database.repositories.repository import Repository
-from app.modules.profile.models.profile import Profile
+from app.modules.worker.models.worker import Worker
 
-class ProfileRepository(Repository):
+class WorkerRepository(Repository):
     
     repository:Repository
 
     def __init__(self):
        self.repository = super()
-       self.repository.__init__('profiles',Profile)
+       self.repository.__init__('workers',Worker)

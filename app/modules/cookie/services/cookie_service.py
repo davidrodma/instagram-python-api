@@ -65,6 +65,10 @@ class CookieService:
         return self.repository.delete_many_by_ids(ids)
     
     @classmethod
+    def delete_many(self, filter: dict):
+        return self.repository.delete_many(filter)
+    
+    @classmethod
     def count(self, filter: dict = {}):
         return self.repository.count(filter)
     

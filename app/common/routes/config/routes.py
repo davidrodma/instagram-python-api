@@ -1,12 +1,13 @@
 from flask import Flask
 from app.common.routes.services.route_service import RouteService
 from app.common.controllers.test_controller import TestController
-from app.modules.profile.controllers.profile_controller import ProfileController
 from app.modules.proxy.controllers.proxy_controller import ProxyController
 from app.modules.cookie.controllers.cookie_controller import CookieController
+from app.modules.config.controllers.config_controller import ConfigController
+from app.modules.profile.controllers.profile_controller import ProfileController
+from app.modules.worker.controllers.worker_controller import WorkerController
 from app.modules.instagram.controllers.instagram_scrape_controller import InstagramScrapeController
 from app.modules.instagram.controllers.instagram_profile_controller import InstagramProfileController
-from app.modules.config.controllers.config_controller import ConfigController
 
 class Routes:
     service = RouteService()
@@ -20,15 +21,19 @@ class Routes:
         app.add_url_rule('/proxies/create-many', 'proxies.create_many', ProxyController.create_many, methods=['POST'])
         self.service.create_default_routes(app,'proxies',ProxyController)
 
-        #Profiles
-        app.add_url_rule('/profiles/create-many', 'profiles.create_many', ProfileController.create_many, methods=['POST'])
-        self.service.create_default_routes(app,'profiles',ProfileController)
-
         #Cookies
         self.service.create_default_routes(app,'cookies',CookieController)
 
         #Config
         self.service.create_default_routes(app,'config',ConfigController)
+
+        #Profiles
+        app.add_url_rule('/profiles/create-many', 'profiles.create_many', ProfileController.create_many, methods=['POST'])
+        self.service.create_default_routes(app,'profiles',ProfileController)
+
+        #Workers
+        app.add_url_rule('/workers/create-many', 'workers.create_many', WorkerController.create_many, methods=['POST'])
+        self.service.create_default_routes(app,'workers',WorkerController)
 
         #Instagram - Scrape
         app.add_url_rule('/instagram/scrape/user-info', 'instagram.user_info', InstagramScrapeController.user_info, methods=['GET'])

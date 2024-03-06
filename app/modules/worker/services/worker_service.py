@@ -1,5 +1,5 @@
-from app.modules.profile.repositories.profile_repository import ProfileRepository
-from app.modules.profile.models.profile import Profile
+from app.modules.worker.repositories.worker_repository import WorkerRepository
+from app.modules.worker.models.worker import Worker
 from typing import List,Iterable
 from app.common.types.paginate_options import PaginateOptions
 from app.common.types.id import ID
@@ -7,34 +7,34 @@ from datetime import datetime
 from app.modules.config.services.config_service import ConfigService
 from app.modules.instagram.utilities.instagram_utility import InstagramUtility
 
-class ProfileService:
+class WorkerService:
 
-    repository = ProfileRepository()
+    repository = WorkerRepository()
     
     @classmethod
-    def find_many(self,filter = None)->List[Profile]:
+    def find_many(self,filter = None)->List[Worker]:
         return self.repository.find_many(filter)
     
     @classmethod
-    def find_one(self, filter:dict)->Profile:
+    def find_one(self, filter:dict)->Worker:
         return self.repository.find_one(filter)
     
     @classmethod
-    def find_by_id(self, id:ID)->Profile:
+    def find_by_id(self, id:ID)->Worker:
         return self.repository.find_by_id(id)
     
     @classmethod
-    def create(self, data:Profile):
+    def create(self, data:Worker):
         count = self.count()
-        data['profileId'] = str(count+1)
+        data['workerId'] = str(count+1)
         self.delete_many({"username":data['username']})
         return self.repository.create(data)
     
     @classmethod
     def create_many(self, data: Iterable[dict]):
         count = self.count()
-        data = [{**obj, "profileId": str(count+i+1)} for i,obj in enumerate(data)]
-        self.delete_many({"username":data['username']})
+        data = [{**obj, "workerId": str(count+i+1)} for i,obj in enumerate(data)]
+        [self.delete_many({"username":obj['username']}) for i,obj in enumerate(data)]
         return self.repository.create_many(data)
     
     @classmethod
@@ -42,12 +42,12 @@ class ProfileService:
         return self.repository.update(filter,data)
     
     @classmethod
-    def find_one_and_update(self,filter:dict, data: dict)->Profile:
+    def find_one_and_update(self,filter:dict, data: dict)->Worker:
         return self.repository.find_one_and_update(filter,data)
     
 
     @classmethod
-    def update_by_id(self, id:ID, data: Profile):
+    def update_by_id(self, id:ID, data: Worker):
         return self.repository.update_by_id(id, data)
     
     @classmethod
@@ -87,22 +87,22 @@ class ProfileService:
         return self.repository.paginate(filter,options)
     
     @classmethod
-    def get_one_random(self,filter:dict = {})->Profile:
+    def get_one_random(self,filter:dict = {})->Worker:
         return self.repository.get_one_random(filter)
     
     @classmethod
-    def get_by_username(self, username:str)->Profile:
+    def get_by_username(self, username:str)->Worker:
         return self.find_one({"username":username})
     
     @classmethod
-    def get_random_profile(self)->Profile:
+    def get_random_worker(self)->Worker:
         try:
             obj =  self.get_one_random({"status":1})
             if not obj:
-                raise Exception("no profile!")
+                raise Exception("no worker!")
             return obj
         except Exception as e:
-             raise Exception(f'get_random_profile: {e}')
+             raise Exception(f'get_random_worker: {e}')
         
     @classmethod
     def check_count_few_minutes(self,username: str, error: str = '', check_few_minutes: bool = False):
@@ -128,15 +128,15 @@ class ProfileService:
                 update['$inc'] = {'countSuccess': 1}
 
 
-            profile = self.find_one_and_update(
+            worker = self.find_one_and_update(
                 {'username': username},
                 update
             )
 
-            if profile and disable_few_minutes > 0 and profile.countFewMinutes >= disable_few_minutes:
-                self.disable(profile.username, f"disable error because config disable-few-minutes: {error}")
+            if worker and disable_few_minutes > 0 and worker.countFewMinutes >= disable_few_minutes:
+                self.disable(worker.username, f"disable error because config disable-few-minutes: {error}")
 
-            return profile
+            return worker
 
         except Exception as e:
             print('checkCountFewMinutes', e)
@@ -150,7 +150,7 @@ class ProfileService:
         )  
 
     @classmethod
-    def increment_count(self,username: str, quantity: int, type: str = '') -> Profile:
+    def increment_count(self,username: str, quantity: int, type: str = '') -> Worker:
         try:
             update = {
                 'countUsed': quantity,
@@ -158,27 +158,27 @@ class ProfileService:
             if type and type in ['follower', 'like', 'comment']:
                 update[f'countCurrent{type.capitalize()}'] = quantity
 
-            profile = self.find_one_and_update(
+            worker = self.find_one_and_update(
                 {'username': username},
                 {'$inc': update}
             )
 
-            return profile
+            return worker
         except Exception as e:
             print('incrementCount', e)
             raise Exception(f"incrementCount: {e}")
 
     @classmethod  
-    def update_count(self,username: str, quantity: int, type: str = '') -> Profile:
+    def update_count(self,username: str, quantity: int, type: str = '') -> Worker:
         try:
-            profile = self.increment_count(username, quantity, type)
-            return profile
+            worker = self.increment_count(username, quantity, type)
+            return worker
         except Exception as e:
-            raise Exception(f"Profile->updateCount {username}: {e}")
+            raise Exception(f"Worker->updateCount {username}: {e}")
         
 
     @classmethod
-    def disable(self,username: str, reason: str = '')->Profile:
+    def disable(self,username: str, reason: str = '')->Worker:
         try:
             print('disable', username)
             date = datetime.utcnow()
@@ -200,7 +200,7 @@ class ProfileService:
                 update.update({'$inc': {'countError': 1}})
             return self.find_one_and_update({'username': username}, update)
         except Exception as e:
-            message_error = f'profile_service->disable: {e}'
+            message_error = f'worker_service->disable: {e}'
             print('disable', message_error)
             raise Exception(message_error)
         
