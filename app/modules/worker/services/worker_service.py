@@ -6,10 +6,12 @@ from app.common.types.id import ID
 from datetime import datetime
 from app.modules.config.services.config_service import ConfigService
 from app.modules.instagram.utilities.instagram_utility import InstagramUtility
+from app.modules.proxy.services.proxy_service import ProxyService
 
 class WorkerService:
 
     repository = WorkerRepository()
+    proxy_service = ProxyService()
     
     @classmethod
     def find_many(self,filter = None)->List[Worker]:
@@ -103,7 +105,7 @@ class WorkerService:
             return obj
         except Exception as e:
              raise Exception(f'get_random_worker: {e}')
-        
+    
     @classmethod
     def check_count_few_minutes(self,username: str, error: str = '', check_few_minutes: bool = False):
         try:
@@ -118,24 +120,35 @@ class WorkerService:
                     
                     if config:
                         arr = config.split(',')
-                        disable_few_minutes = int(arr[0]) if arr else 0
+                        disable_few_minutes = int(arr[1]) if len(arr) > 1 else int(arr[0])
                     
                     update['$inc'] = {'countError': 1, 'countFewMinutes': 1}
                     update["$set"]['fewMinutesAt'] = datetime.utcnow()
+                else:
+                     update['$inc'] = {'countError': 1}
 
             else:
                 update["$set"]['countFewMinutes'] = 0
-                update['$inc'] = {'countSuccess': 1}
-
 
             worker = self.find_one_and_update(
                 {'username': username},
                 update
             )
 
-            if worker and disable_few_minutes > 0 and worker.countFewMinutes >= disable_few_minutes:
+            if worker and disable_few_minutes > 0 and worker:
+                worker.countFewMinutes >= disable_few_minutes
                 self.disable(worker.username, f"disable error because config disable-few-minutes: {error}")
 
+
+            if disable_few_minutes > 0 and worker:
+                if worker.countFewMinutes >= disable_few_minutes:
+                   self.disable(worker.username, f"disable error because config disable-few-minutes: {error}")
+                elif worker.proxy:
+                    if not self.proxy_service.is_proxy_fixed('worker') and \
+                            worker.typeProxy != 'buy-proxy' and \
+                            not self.proxy_service.is_buy_proxy(worker.proxy):
+                        worker.proxy = 'random'
+                        worker = self.find_one_and_update(worker._id,{"proxy":worker.proxy})
             return worker
 
         except Exception as e:
@@ -175,7 +188,6 @@ class WorkerService:
             return worker
         except Exception as e:
             raise Exception(f"Worker->updateCount {username}: {e}")
-        
 
     @classmethod
     def disable(self,username: str, reason: str = '')->Worker:
@@ -203,6 +215,37 @@ class WorkerService:
             message_error = f'worker_service->disable: {e}'
             print('disable', message_error)
             raise Exception(message_error)
+        
+
+    @classmethod
+    def check_count_challenge(self,username: str, error: str = '', check_challenge: bool = False) -> None:
+        try:
+            update = {}
+            disable_challenge = 0
+            if error:
+                update = {'noteError': error}
+                if ('challenge' in error or 'checkpoint' in error) and check_challenge:
+                    name_config = 'disable-challenge-login' if 'login' in error else 'disable-challenge-action'
+                    disable_challenge = ConfigService.get_config_value(name_config)
+                    disable_challenge = int(disable_challenge) if disable_challenge else 0
+                    update['$inc'] = {'countError': 1, 'countChallenge': 1}
+                else:
+                    update['$inc'] = {'countError': 1}
+            else:
+                update['countChallenge'] = 0
+            
+            worker = self.find_one_and_update({'username': username}, update)
+
+            if disable_challenge > 0 and worker and worker.countChallenge >= disable_challenge:
+                self.disable(worker.username, f'disable error because config disable-challenge: {error}')
+            elif worker and worker.proxy:
+                if not self.proxy_service.is_proxy_fixed('worker') and worker.typeProxy != 'buy-proxy' and not self.proxy_service.is_buy_proxy(worker.proxy):
+                    worker = self.find_one_and_update({'username': username}, {"proxy":"random"})
+            return worker
+        except Exception as e:
+            print('checkCountChallenge', e)
+            raise Exception(f'checkCountChallenge : {e}')
+
         
 
     

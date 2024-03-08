@@ -59,7 +59,7 @@ class InstagrapiApi:
                         cl.login(username, password)
                     except Exception as e: 
                         name_challenge =''
-                        #name_challenge = InstagrapiChallenge.detect_name_challenge(e)
+                        name_challenge = InstagrapiChallenge.detect_name_challenge(e)
                         raise Exception(f"login by login_via_session.get_timeline_feed LoginRequired {name_challenge} {e}")
                 except Exception as e:
                     ExceptionUtility.print_line_error()
@@ -343,6 +343,42 @@ class InstagrapiApi:
             logger.error(message_error)
             raise Exception(message_error)
         
+    async def find_user_in_comments(
+            self,
+            cl: Client, 
+            pk: str, 
+            max: int, 
+            username_comment: str = '', 
+            user_id_comment: str = ''
+        ) -> Dict[str, Union[str, List[Dict[str, Union[str, int]]]]]:
+        
+        try:
+            comments_on_post:List[Comment] = await self.get_comments_on_post(cl, pk=pk, max=max)
+            image_action = ''
+            if not user_id_comment and not username_comment:
+                raise Exception('user_id_comment or username_comment required')
+            arr_find = [user_id_comment] if user_id_comment else [username_comment]
+            filtered = [comment for comment in comments_on_post if comment.user.pk in arr_find or comment.user.username in arr_find]
+            comments = []
+            is_comment = False
+            for pk_or_username in arr_find:
+                data = [comment for comment in filtered if comment.user.pk == pk_or_username or comment.user.username == pk_or_username]
+                is_comment = bool(data)
+                comment_obj:Comment = data[0] if is_comment else None
+                username = comment_obj.user.username if is_comment else username_comment
+                id = comment_obj.user.pk if is_comment else user_id_comment
+                image_action = comment_obj.user.profile_pic_url.unicode_string() if is_comment else ''
+                text = comment_obj.text if is_comment else ''
+                comment_id = comment_obj.pk if is_comment else 0
+                comment_like_count = comment_obj.like_count if is_comment else 0
+                if is_comment:
+                    username_comment = username
+                    logger.info(f"{id} {username} commented media {pk}")
+                comments.append({'id': id, 'username': username, 'is_comment': is_comment, 'comment_id': comment_id, 'comment_like_count': comment_like_count, 'text': text})
+            return image_action, comments, is_comment, username_comment
+        except Exception as e:
+            raise Exception(f"api.find_user_in_comments {e}")
+        
     async def get_recent_stories(
         self,
         cl: Client,
@@ -416,44 +452,40 @@ class InstagrapiApi:
             logger.info(f'{cl.username} seen {username} {pk} {len(stories)} stories')
 
             return {'status': 'ok' if seen_result else 'error', 'list': stories, 'count': len(stories),'seen_result':seen_result}
+    
 
-    async def find_user_in_comments(
-            self,
-            cl: Client, 
-            pk: str, 
-            max: int, 
-            username_comment: str = '', 
-            user_id_comment: str = ''
-        ) -> Dict[str, Union[str, List[Dict[str, Union[str, int]]]]]:
-        
+    async def follow_by_id(cl: Client, user_id: int | str):
+        response = None
         try:
-            comments_on_post:List[Comment] = await self.get_comments_on_post(cl, pk=pk, max=max)
-            image_action = ''
-            if not user_id_comment and not username_comment:
-                raise Exception('user_id_comment or username_comment required')
-            arr_find = [user_id_comment] if user_id_comment else [username_comment]
-            filtered = [comment for comment in comments_on_post if comment.user.pk in arr_find or comment.user.username in arr_find]
-            comments = []
-            is_comment = False
-            for pk_or_username in arr_find:
-                data = [comment for comment in filtered if comment.user.pk == pk_or_username or comment.user.username == pk_or_username]
-                is_comment = bool(data)
-                comment_obj:Comment = data[0] if is_comment else None
-                username = comment_obj.user.username if is_comment else username_comment
-                id = comment_obj.user.pk if is_comment else user_id_comment
-                image_action = comment_obj.user.profile_pic_url.unicode_string() if is_comment else ''
-                text = comment_obj.text if is_comment else ''
-                comment_id = comment_obj.pk if is_comment else 0
-                comment_like_count = comment_obj.like_count if is_comment else 0
-                if is_comment:
-                    username_comment = username
-                    logger.info(f"{id} {username} commented media {pk}")
-                comments.append({'id': id, 'username': username, 'is_comment': is_comment, 'comment_id': comment_id, 'comment_like_count': comment_like_count, 'text': text})
-            return image_action, comments, is_comment, username_comment
+            response = cl.user_follow(user_id)
+            if response:
+                logger.info(f"{cl.username} followed id {user_id}")
+            else:
+                logger.error(f"{cl.username} Can not Follow user at the moment with Id  {user_id}")
+            return response
         except Exception as e:
-            raise Exception(f"api.find_user_in_comments {e}")
-        
-        
+            ExceptionUtility.print_line_error()
+            name_challenge = InstagrapiChallenge.detect_name_challenge(e)
+            message_error = f"api.follow_by_id.user_follower {name_challenge} {e}"
+            logger.error(message_error)
+            raise Exception(message_error)
+     
+    async def follow_by_username(cl: Client, username: str):
+        response = None
+        try:
+            info_user = cl.user_info_by_username_v1(username=username)
+            response = cl.user_follow(info_user.pk)
+            if response:
+                logger.info(f"{cl.username} followed username {username}")
+            else:
+                logger.error(f"{cl.username} Can not Follow user at the moment with username  {username}")
+            return response
+        except Exception as e:
+            ExceptionUtility.print_line_error()
+            name_challenge = InstagrapiChallenge.detect_name_challenge(e)
+            message_error = f"api.follow_by_id.user_follower {name_challenge} {e}"
+            logger.error(message_error)
+            raise Exception(message_error)
         
         
             

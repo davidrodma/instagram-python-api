@@ -82,6 +82,14 @@ class ProxyService:
     def get_by_url(self,url:str)->Proxy:
         return self.repository.find_one({"url":url})
     
+        
+    @classmethod
+    def is_buy_proxy(self,url: str) -> bool:
+        current_proxy = self.get_by_url(url)
+        if current_proxy and current_proxy.type == 'buy-proxy':
+            return True
+        return False
+
     @classmethod
     def random_proxy(self,type='',countryCode='') -> Proxy:
         where = {'status': 1}
@@ -100,14 +108,14 @@ class ProxyService:
 
             proxy:Proxy = self.repository.get_one_random(where)
 
-            if not proxy or not proxy.get('url'):
+            if not proxy or not proxy.url:
                 print(countryCode, '|', type)
                 if countryCode and 'boost' in type:
                     return self.random_proxy(type=type)
                 raise Exception('No proxy available!')
 
             if type != 'website-view':
-                self.update_count(proxy['url'])
+                self.update_count(proxy.url)
 
             return proxy
 
@@ -217,3 +225,14 @@ class ProxyService:
             'ip_block' in message_error,
             ' socks ' in message_error
         ])
+    
+    @classmethod
+    async def is_proxy_fixed(self,type_: str) -> bool:
+        config = ConfigService.get_config_value('proxy-fixed')
+        if config:
+            arr = config.split(',')
+            key = 1 if type_ == 'worker' else 0
+            key = 2 if type_ == 'boost' else key
+            if arr[key]:
+                return True
+        return False

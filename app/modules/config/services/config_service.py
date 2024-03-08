@@ -82,6 +82,6 @@ class ConfigService:
         return config if config and config.value else None
     
     @classmethod
-    def get_config_value(self,name:str)->Config:
+    def get_config_value(self,name:str)->str:
         config:Config = self.get_config_actived(name)
         return config.value if config and config.value else None
