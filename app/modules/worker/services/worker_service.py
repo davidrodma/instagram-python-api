@@ -163,17 +163,21 @@ class WorkerService:
         )  
 
     @classmethod
-    def increment_count(self,username: str, quantity: int, type: str = '') -> Worker:
+    def increment_count(self,username: str, quantity: int, type: str = '',is_success=False) -> Worker:
         try:
-            update = {
+            update = {}
+            increment = {
                 'countUsed': quantity,
             }
             if type and type in ['follower', 'like', 'comment']:
-                update[f'countCurrent{type.capitalize()}'] = quantity
-
+                increment[f'countCurrent{type.capitalize()}'] = quantity
+            if is_success:
+                update.update({'$set': {"countChallenge":0}})
+                increment['countSuccess'] = 1
+            update.update({'$inc': increment})
             worker = self.find_one_and_update(
                 {'username': username},
-                {'$inc': update}
+                update
             )
 
             return worker
@@ -182,9 +186,9 @@ class WorkerService:
             raise Exception(f"incrementCount: {e}")
 
     @classmethod  
-    def update_count(self,username: str, quantity: int, type: str = '') -> Worker:
+    def update_count(self,username: str, quantity: int, type: str = '',is_success=False) -> Worker:
         try:
-            worker = self.increment_count(username, quantity, type)
+            worker = self.increment_count(username, quantity, type, is_success)
             return worker
         except Exception as e:
             raise Exception(f"Worker->updateCount {username}: {e}")

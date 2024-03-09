@@ -3,9 +3,11 @@ from instagrapi.types import UserShort,Comment
 from typing import List,Dict,Union
 from app.modules.instagram.api.instagrapi.instagrapi_api import InstagrapiApi
 from app.modules.instagram.api.instagrapi.instagrapi_profile import InstagrapiProfile
+from app.modules.instagram.api.instagrapi.instagrapi_worker import InstagrapiWorker
 from app.modules.instagram.api.instagrapi.instagrapi_helper import InstagrapiHelper
 from app.modules.instagram.api.instagrapi.types import UserWithImage,User,Media,MediaWithImage,StoryWithImage
 from app.modules.profile.services.profile_service import ProfileService
+from app.modules.worker.services.worker_service import WorkerService
 from app.common.utilities.exception_utility import ExceptionUtility
 from app.common.utilities.image_utility import ImageUtility
 from app import app
@@ -25,7 +27,9 @@ class InstagrapiScrape:
     def __init__(self):
         self.api = InstagrapiApi()
         self.instagrapi_profile = InstagrapiProfile()
+        self.instagrapi_worker = InstagrapiWorker()
         self.profile_service = ProfileService()
+        self.worker_service = WorkerService()
 
     def type_scrape_by_port(self):
          port =  app.config.get('SERVER_PORT')
@@ -41,7 +45,8 @@ class InstagrapiScrape:
         cl = Client()
         type = self.type_scrape_by_port()
         if 'worker'==type:
-            raise Exception("Not implement")
+            worker = self.worker_service.get_random_worker()
+            cl = await self.instagrapi_worker.login(worker)
         elif 'boost'==type:
             raise Exception("Not implement")
         else:
@@ -71,9 +76,9 @@ class InstagrapiScrape:
                     infoUser:User = await self.api.get_user_info(cl, username, pk)
                     info = UserWithImage(**infoUser.model_dump())
                     if type=="worker":
-                        pass
+                       self.worker_service.update_count(cl.username, 1)
                     elif type=="boost":
-                        pass
+                        raise Exception("Not implement")
                     else:
                         self.profile_service.update_count(cl.username, 1)
                     if hasattr(info,'profile_pic_url') and not noImage:
@@ -82,7 +87,7 @@ class InstagrapiScrape:
                     success = False
                     message_error = f"user_info->while: {err}"
                     logger.error(message_error)
-                    await self.instagrapi_profile.error_handling(cl, message_error)
+                    await self.instagrapi_profile.error_action(cl, message_error)
                     if attempts <= 0:
                         raise Exception(message_error)
             return info
@@ -133,7 +138,7 @@ class InstagrapiScrape:
                     message_error = f"user_recent_posts.get_user_info {e}"
                     success = False
                     if attempts <= 0 or 'not found' in message_error or 'user info response' in message_error:
-                        await self.instagrapi_profile.error_handling(cl, message_error)
+                        await self.instagrapi_profile.error_action(cl, message_error)
                         raise Exception(f'usuário não encontrado: {message_error}')
 
                 if not info or not success:
@@ -182,7 +187,7 @@ class InstagrapiScrape:
                             'is_private': True,
                         }
                     if attempts <= 0:
-                        await self.instagrapi_profile.error_handling(cl, message_error)
+                        await self.instagrapi_profile.error_action(cl, message_error)
                         raise Exception(f'posts não encontrado: {message_error}')
 
                 if not success:
@@ -276,7 +281,7 @@ class InstagrapiScrape:
                     self.profile_service.update_count(cl.username, 1)
                 except Exception as err:
                     message_error = str(err)
-                    await self.instagrapi_profile.error_handling(cl, message_error)
+                    await self.instagrapi_profile.error_action(cl, message_error)
                     if attempts <= 0:
                         raise Exception(err)
                     success = False
@@ -632,7 +637,7 @@ class InstagrapiScrape:
                 return {'media_id': post.pk,'is_comment':is_comment,'username_comment':username_comment, 'comments': comments, 'image_action': image_action}
             except Exception as e:
                 message_error = f"scrape.comments_in_post.find_user_in_comments: {e}"
-                await self.instagrapi_profile.error_handling(cl, message_error)
+                await self.instagrapi_profile.error_action(cl, message_error)
                 raise Exception(message_error)
         except Exception as e:
             ExceptionUtility.print_line_error()
@@ -687,7 +692,7 @@ class InstagrapiScrape:
                         }
                     logger.error(message_error)
                     if cl:
-                        await self.instagrapi_profile.error_handling(cl, message_error)
+                        await self.instagrapi_profile.error_action(cl, message_error)
                     obj_last_post = await self.user_last_post(username)
                     if 'error' in obj_last_post:
                         return obj_last_post
@@ -743,7 +748,7 @@ class InstagrapiScrape:
                     message_error = str(e)
                     success = False
                     if attempts <= 0 or 'not found' in message_error or 'user info response' in message_error:
-                        await self.instagrapi_profile.error_handling(cl, message_error)
+                        await self.instagrapi_profile.error_action(cl, message_error)
                         raise Exception('usuário do story parece que não foi encontrado (404 Not Found) : ' + message_error)
 
                 if not user or not success:
@@ -770,7 +775,7 @@ class InstagrapiScrape:
                     success = False
                     message_error =  f'scrape.user_recent_stories.get_recent_stories: {e} '
                     logger.error(message_error)
-                    await self.instagrapi_profile.error_handling(cl, message_error)
+                    await self.instagrapi_profile.error_action(cl, message_error)
                     if attempts <= 0:
                         raise Exception(f'stories não encontrado: {message_error} ')
 
@@ -815,10 +820,10 @@ class InstagrapiScrape:
             logger.error(message_error)
             ExceptionUtility.print_line_error()
             if cl:
-                await self.instagrapi_profile.error_handling(cl, message_error)
+                await self.instagrapi_profile.error_action(cl, message_error)
             raise Exception(message_error)
         
-    async def scrape_biographies(self,username: str, quantity: int, min_char: int = 0):
+    async def extract_biographies(self,username: str, quantity: int, min_char: int = 0):
         try:
             cl = await self.login_scrape()
             i = 0

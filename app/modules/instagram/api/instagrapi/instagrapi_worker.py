@@ -1,6 +1,7 @@
 from typing import Dict
 from app.modules.worker.services.worker_service import WorkerService
 from app.modules.proxy.services.proxy_service import ProxyService
+from app.modules.proxy.models.proxy import Proxy
 from app.modules.config.services.config_service import ConfigService
 from app.modules.cookie.services.cookie_service import CookieService
 from app.modules.instagram.utilities.instagram_utility import InstagramUtility
@@ -10,7 +11,6 @@ from app.common.utilities.logging_utility import LoggingUtility
 from app.modules.instagram.api.instagrapi.instagrapi_api import InstagrapiApi
 from app.modules.instagram.api.instagrapi.instagrapi_challenge import InstagrapiChallenge
 from instagrapi import Client
-import asyncio
 
 logger = LoggingUtility.get_logger("InstagrapiWorker")
 
@@ -30,7 +30,7 @@ class InstagrapiWorker:
     #    self.api = api
     
     async def login(self,worker: Worker):
-        print('LOGIN WORKER -----------------------------------\n')
+        print(f'LOGIN WORKER {worker.username} -----------------------------------\n')
         proxy_url = worker.proxy
         cl:Client = None
 
@@ -60,12 +60,16 @@ class InstagrapiWorker:
 
                 worker.proxy = 'random'
                 self.worker_service.update_by_id(worker._id,{"proxy":worker.proxy})
-
+        proxy:Proxy = None
         if worker.proxy == 'random' or not proxy_url:
-            proxy = self.proxy_service.random_proxy({
-                'type': 'worker',
-                'countryCode': worker.nationality,
-            })
+            try:
+                proxy = self.proxy_service.random_proxy({
+                    'type': 'worker',
+                    'countryCode': worker.nationality,
+                })
+            except Exception as e:
+                message_error = f"workerapi.follower.random_proxy {e}"
+                logger.warning(message_error)
 
             proxy_url = proxy.url if proxy and proxy.url else ''
 
@@ -74,9 +78,9 @@ class InstagrapiWorker:
                 self.worker_service.update_by_id(worker._id,{"proxy":worker.proxy})
 
         if proxy_url:
-            print(f"PROXY: {proxy_url}\n")
+            logger.warning(f"PROXY: {proxy_url}\n")
         else:
-            print(f"SEM PROXY.yellow\n")
+            logger.warning(f"SEM PROXY\n")
             allow_only_proxy = int(self.config_service.get_config_value('allow-only-proxy') or '0')
             if allow_only_proxy:
                 error_proxy = ' ! no proxies ! allow-only-proxy config enable!'
@@ -88,7 +92,7 @@ class InstagrapiWorker:
                 cl.set_proxy(proxy_url)
            
 
-            print(
+            logger.info(
                 f"{worker.username} JÁ ESTAVA LOGADO ",
                 f"COM PROXY: {cl.proxy}" if cl.proxy else "SEM PROXY"
             )
@@ -103,16 +107,16 @@ class InstagrapiWorker:
                     proxy = proxy_url
                 )
             except Exception as e:
-                message_error = f"Error loginByWorker.loginCustom: {e}"
+                message_error = f"Error workerapi.login.login_custom: {e}"
                 await self.error_login(message_error, worker, proxy_url)
                 #await RecoverChallengeController.check_auto_recover(worker, ig['error'])
                 raise Exception(message_error)
         
         cl = await self.change_proxy(cl, 'worker-action', worker)
         self.workers_cl[worker.username] = cl
-        await self.worker_service.check_count_few_minutes(worker.username)
+        self.worker_service.check_count_few_minutes(worker.username)
 
-        print('END LOGIN --------------------------------')
+        print(f'END LOGIN WORKER {worker.username}  --------------------------------')
         return cl
 
     async def change_proxy(self,cl: Client, type: str, obj_account: Worker = None) -> Client:
@@ -165,7 +169,7 @@ class InstagrapiWorker:
         else:
             self.worker_service.note_error(worker.username, f"login message error: {message_error}")
 
-    async def error_handling(self,cl: Client, message_error: str):
+    async def error_action(self,cl: Client, message_error: str):
         message_error = 'errorHandling: ' + message_error
         if cl.username:
             print(f"Error Handling: {cl.username} {message_error}\n")
@@ -212,12 +216,13 @@ class InstagrapiWorker:
             logger.error(message_error)
             raise Exception(message_error)
         
-    async def follower_action(self,username_action:str='',username_target:str='',id_target:str=''):
+    async def follower_action(self,username_action:str,username_target:str='',id_target:str=''):
         error_link = False
         is_follower = False
         already_exists = False
         worker:Worker = None
         max_limit = False
+        is_action = False
         try:
 
             if not username_action:
@@ -227,20 +232,28 @@ class InstagrapiWorker:
                 raise Exception('username_target or id_target required!')
 
             worker = self.worker_service.get_by_username(username_action)
-            if not worker or not worker.status:
+            if not worker or not int(worker.status):
                 raise Exception(f"Usuário {username_action} já foi desativado: {worker.noteError}")
 
             cl = await self.login(worker)
 
             if not id_target:
-                info_target = await self.api.get_user_info(cl, username_target, id_target)
+                try:
+                    info_target = await self.api.get_user_info(cl, username_target, id_target)
+                except Exception as e:
+                    message_error = f"ERRO worker.follower_action.get_user_info: erro quando o usuário da ação de seguir for pegar dos dados do alvo {e}"
+                    is_action = True
+                    raise Exception(message_error)
+                
                 if not info_target or not info_target.pk:
                     error_link = True
                     raise Exception('username target não encontrado')
 
                 if info_target.is_private:
-                    {
-                        'error': f"worker private: {info_target.username}",
+                    message_error = f"worker private: {info_target.username}"
+                    logger.error(message_error)
+                    return {
+                        'error': message_error,
                         'id_target': info_target.pk,
                         'username_target': info_target.username,
                         'is_private': True,
@@ -253,10 +266,11 @@ class InstagrapiWorker:
             try:
                 is_follower = await self.api.follow_by_id(cl, id_target)
             except Exception as e:
-                message_error = f'ERRO worker.follower_action: followerAction->followById username {worker.username} proxy ${cl.proxy}: {e}'
+                is_action = True
+                message_error = f'ERRO worker.follower_action: followerAction->followById username {worker.username} proxy {cl.proxy}: {e}'
                 if 'following the max limit' in message_error:
                     max_limit = True
-                self.error_handling(cl,message_error)
+                raise Exception(message_error)
 
            
             if not is_follower:
@@ -283,6 +297,8 @@ class InstagrapiWorker:
         except Exception as e:
             message_error = f"ERROR: {e}"
             logger.error(message_error)
+            ExceptionUtility.print_line_error()
+            self.error_action(cl,message_error) if is_action and cl and cl.username else self.worker_service.note_error(username_action,message_error)
             worker = self.worker_service.get_by_username(username_action) if username_action else None
             return {
                 'error': message_error,
@@ -295,6 +311,7 @@ class InstagrapiWorker:
                     'noteError': worker.noteError if worker else '',
                 },
             }
+        
 
 
 

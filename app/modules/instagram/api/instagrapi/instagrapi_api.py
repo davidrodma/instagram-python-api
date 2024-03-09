@@ -12,6 +12,14 @@ logger = LoggingUtility.get_logger("InstagrapiApi")
 
 class InstagrapiApi:
     cookie_service = CookieService()
+    
+    @classmethod
+    def challenge_code_handler():
+        raise Exception('manual_input_code Verify Code Email/Sms')
+    
+    @classmethod
+    def manual_change_password():
+        raise Exception('manual_change_password change password New Password')
 
     @classmethod
     async def login_custom(self,username:str,password:str,proxy:str='',verification_mode:str='',return_ig_error:bool=False)->Client:
@@ -35,10 +43,11 @@ class InstagrapiApi:
             cl.set_proxy(proxy)
         else:
              logger.warning(f"Not using proxy")
-
         login_via_session = False
         login_via_pw = False
         message_error = ""
+        cl.challenge_code_handler = self.challenge_code_handler()
+        cl.change_password_handler = self.manual_change_password()
         old_session = {}
         if session:
             try:
@@ -454,7 +463,7 @@ class InstagrapiApi:
             return {'status': 'ok' if seen_result else 'error', 'list': stories, 'count': len(stories),'seen_result':seen_result}
     
 
-    async def follow_by_id(cl: Client, user_id: int | str):
+    async def follow_by_id(self,cl: Client, user_id: int | str):
         response = None
         try:
             response = cl.user_follow(user_id)
@@ -486,6 +495,25 @@ class InstagrapiApi:
             message_error = f"api.follow_by_id.user_follower {name_challenge} {e}"
             logger.error(message_error)
             raise Exception(message_error)
+        
+
+    async def like_media(cl:Client, media_id:str='',url=''):
+        liked = False
+        try:
+            if not media_id and not url:
+                raise Exception("media_id or url required")
+            if not media_id:
+                media_id = cl.media_pk_from_url(url)
+            liked = cl.media_like(media_id)
+        except Exception as err:
+            ExceptionUtility.print_line_error()
+            name_challenge = InstagrapiChallenge.detect_name_challenge(err)
+            message_error = f"api.like_media.media_like {err} {name_challenge} username {cl.username} proxy {cl.proxy} target {media_id} {url}"
+            logger.error(message_error)
+            raise Exception(message_error)
+        logger.info(f'Liked media https://www.instagram.com/p/{cl.media_code_from_pk(media_id)}')
+        return liked
+    
         
         
             

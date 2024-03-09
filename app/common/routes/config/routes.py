@@ -8,6 +8,7 @@ from app.modules.profile.controllers.profile_controller import ProfileController
 from app.modules.worker.controllers.worker_controller import WorkerController
 from app.modules.instagram.controllers.instagram_scrape_controller import InstagramScrapeController
 from app.modules.instagram.controllers.instagram_profile_controller import InstagramProfileController
+from app.modules.instagram.controllers.instagram_worker_controller import InstagramWorkerController
 
 class Routes:
     service = RouteService()
@@ -61,3 +62,6 @@ class Routes:
 
         #Instagram - Profile Action
         app.add_url_rule('/instagram/profile/seen-stories-action', 'instagram.seen_stories_action', InstagramProfileController.seen_stories_action, methods=['GET'])
+
+        #Instagram - Worker Action
+        app.add_url_rule('/instagram/worker/follower-action', 'instagram.follower_action', InstagramWorkerController.follower_action, methods=['GET'])

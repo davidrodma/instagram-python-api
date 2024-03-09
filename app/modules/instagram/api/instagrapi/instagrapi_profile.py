@@ -152,7 +152,7 @@ class InstagrapiProfile:
                     self.proxy_service.update_count(proxy_url, message_error, 'extract')
             self.profile_service.note_error(profile.username, f"login message error: {message_error}")
 
-    async def error_handling(self,cl: Client, message_error: str, type="extract"):
+    async def error_action(self,cl: Client, message_error: str, type="extract"):
         if type == 'worker':
            raise Exception("Not implement")
         elif type == 'boost':
