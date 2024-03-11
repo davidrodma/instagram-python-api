@@ -9,17 +9,15 @@ from typing import List,Union,Dict
 from app.modules.instagram.api.instagrapi.types import UserWithImage
 
 logger = LoggingUtility.get_logger("InstagrapiApi")
+    
+def challenge_code_handler_custom():
+    raise Exception('manual_input_code Verify Code Email/Sms')
+
+def manual_change_password_custom():
+    raise Exception('manual_change_password change password New Password')
 
 class InstagrapiApi:
     cookie_service = CookieService()
-    
-    @classmethod
-    def challenge_code_handler():
-        raise Exception('manual_input_code Verify Code Email/Sms')
-    
-    @classmethod
-    def manual_change_password():
-        raise Exception('manual_change_password change password New Password')
 
     @classmethod
     async def login_custom(self,username:str,password:str,proxy:str='',verification_mode:str='',return_ig_error:bool=False)->Client:
@@ -46,8 +44,8 @@ class InstagrapiApi:
         login_via_session = False
         login_via_pw = False
         message_error = ""
-        cl.challenge_code_handler = self.challenge_code_handler()
-        cl.change_password_handler = self.manual_change_password()
+        #cl.challenge_code_handler = challenge_code_handler_custom()
+        #cl.change_password_handler = manual_change_password_custom()
         old_session = {}
         if session:
             try:
@@ -497,7 +495,7 @@ class InstagrapiApi:
             raise Exception(message_error)
         
 
-    async def like_media(cl:Client, media_id:str='',url=''):
+    async def like_media(self,cl:Client, media_id:str='',url='')->bool:
         liked = False
         try:
             if not media_id and not url:
@@ -514,7 +512,34 @@ class InstagrapiApi:
         logger.info(f'Liked media https://www.instagram.com/p/{cl.media_code_from_pk(media_id)}')
         return liked
     
-        
+
+    async def comment_media(self,cl:Client, text: str, media_id: str='', url=''):
+        commented = False
+        comment:Comment = None
+        try:
+            if not media_id and not url:
+                raise Exception("media_id or url required")
+            if not media_id:
+                media_id = cl.media_pk_from_url(url)
+            comment = cl.media_comment(media_id,text)
+            commented = True if comment and hasattr(comment,'pk') else False
+            logger.info(f'Commented media https://www.instagram.com/p/{cl.media_code_from_pk(media_id)}')
+            return commented,comment
+        except Exception as err:
+            ExceptionUtility.print_line_error()
+            name_challenge = InstagrapiChallenge.detect_name_challenge(err)
+            message_error = f"api.comment_media.media_comment {err} {name_challenge} username {cl.username} proxy {cl.proxy} target {media_id} {url}"
+      
+            if 'feedback_required' in message_error:
+                try:
+                    post = await self.get_media_id_info(cl, media_id)
+                    if post and hasattr(post,'pk') and (post.comments_disabled or post.commenting_disabled_for_viewer):
+                        message_error = f"comments_disabled"
+                except Exception as e:
+                    message_error = f'{message_error} Error check feedback_required get_media_id_info {e}'
+
+            logger.error(message_error)
+            raise Exception(message_error)
         
             
 

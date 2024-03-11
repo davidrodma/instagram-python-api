@@ -1,5 +1,6 @@
 from typing import Dict
 from app.modules.profile.services.profile_service import ProfileService
+from app.modules.instagram.api.instagrapi.instagrapi_worker import InstagrapiWorker
 from app.modules.proxy.services.proxy_service import ProxyService
 from app.modules.config.services.config_service import ConfigService
 from app.modules.cookie.services.cookie_service import CookieService
@@ -19,6 +20,7 @@ logger = LoggingUtility.get_logger("InstagrapiProfile")
 class InstagrapiProfile:
     api = InstagrapiApi()
     profile_service = ProfileService()
+    instagrapi_worker = InstagrapiWorker()
     proxy_service = ProxyService()
     config_service = ConfigService()
     cookie_service = CookieService()
@@ -154,7 +156,7 @@ class InstagrapiProfile:
 
     async def error_action(self,cl: Client, message_error: str, type="extract"):
         if type == 'worker':
-           raise Exception("Not implement")
+           return self.instagrapi_worker.error_action(cl,message_error)
         elif type == 'boost':
             raise Exception("Not implement")
 

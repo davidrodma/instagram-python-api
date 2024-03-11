@@ -274,7 +274,7 @@ class InstagrapiScrape:
                     elif url:
                         media:Media = await self.api.get_media_url_info(cl, url)
                     info = MediaWithImage(**media.model_dump())
-                    if info and hasattr(info,'resources') and info.resources[0] and not no_image:
+                    if info and not no_image and (hasattr(info,'thumbnail_url') or hasattr(info,'resources') and  len(info.resources)>0 and info.resources[0]):
                         info = await InstagrapiHelper.merge_image_base64(info)
                     info.items = [info.model_dump()]
                     info.num_results = 1

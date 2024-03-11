@@ -267,17 +267,17 @@ class InstagrapiWorker:
                 is_follower = await self.api.follow_by_id(cl, id_target)
             except Exception as e:
                 is_action = True
-                message_error = f'ERRO worker.follower_action: followerAction->followById username {worker.username} proxy {cl.proxy}: {e}'
+                message_error = f'ERRO worker.follower_action.follow_by_id: followerAction->followById username {worker.username} proxy {cl.proxy}: {e}'
                 if 'following the max limit' in message_error:
                     max_limit = True
                 raise Exception(message_error)
 
            
             if not is_follower:
-                self.worker_service.note_error(cl.username,'not follow maybe already_followed')
+                message_error = f'not follow maybe already_followed'
+                logger.error(message_error)
+                self.worker_service.note_error(cl.username,message_error)
                 already_exists = True
-            else:
-                is_follower = True
 
             self.worker_service.update_count(cl.username, 1, 'follower', is_follower)
 
@@ -313,5 +313,174 @@ class InstagrapiWorker:
             }
         
 
+    async def like_action(self,username_action:str,url_target:str='',id_target:str=''):
+        error_link = False
+        is_liker = False
+        worker:Worker = None
+        info_target = None
+        already_exists = False
+        is_action = False
+        try:
+            if not username_action:
+                raise Exception('username action required!')
+            if not url_target and not id_target:
+                raise Exception('url_target or id_target required!')
 
+            worker = self.worker_service.get_by_username(username_action)
+            if not worker or not int(worker.status):
+                raise Exception(f"Usuário {username_action} já foi desativado: {worker.noteError}")
+
+            cl = await self.login(worker)
+
+            if not id_target:
+                try: 
+                    info_target = await self.api.get_media_url_info(cl, url_target)
+                except Exception as e:
+                    error_link = True
+                    message_error = f"ERRO worker.like_action.get_media_url_info: erro quando o usuário da ação de de curtir for pegar dos dados do alvo {e}"
+                    is_action = True
+                    raise Exception(message_error)
+                
+                if not info_target or not info_target.pk:
+                    error_link = True
+                    raise Exception('post/media target não encontrado')
+
+                id_target = info_target.pk
+
+            logger.warning(f"{cl.username} will like: {id_target}")
+
+            try:
+                is_liker = await self.api.like_media(cl,id_target)
+            except Exception as e:
+                is_action = True
+                message_error = f'ERRO worker.like_action.like_media: likeAction->likeMediaId  username {worker.username} proxy {cl.proxy}: {e}'
+                if 'not found' in message_error:
+                    error_link = True
+                raise Exception(message_error)
+            
+            if not is_liker:
+                message_error = f'not liker maybe already_liked'
+                logger.error(message_error)
+                self.worker_service.note_error(cl.username,message_error)
+                already_exists = True
+
+            self.worker_service.update_count(cl.username, 1, 'like', is_liker)
+
+            return {
+                'username_action': username_action,
+                'url_target': url_target,
+                'is_liker': is_liker,
+                'id_target': id_target,
+                'already_exists': already_exists,
+                'worker': {
+                    '_id': worker._id,
+                    'username': worker.username,
+                    'status': worker.status,
+                    'noteError': worker.noteError,
+                },
+            }
+        except Exception as e:
+            message_error = f"ERROR: {e}"
+            logger.error(message_error)
+            ExceptionUtility.print_line_error()
+            self.error_action(cl,message_error) if is_action and cl and cl.username else self.worker_service.note_error(username_action,message_error)
+            worker = self.worker_service.get_by_username(username_action) if username_action else None
+            return {
+                'error': message_error,
+                'error_link': error_link,
+                'worker': {
+                    '_id': worker._id if worker else '',
+                    'username': worker.username if worker else username_action,
+                    'status': worker.status if worker else 0,
+                    'noteError': worker.noteError if worker else '',
+                },
+            }
+        
+    async def comment_action(self,username_action:str,text:str,url_target:str='',id_target:str=''):
+        error_link = False
+        is_comment = False
+        worker:Worker = None
+        info_target = None
+        already_exists = False
+        is_action = False
+        try:
+            if not username_action:
+                raise Exception('username action required!')
+            if not url_target and not id_target:
+                raise Exception('url_target or id_target required!')
+            if not text:
+                raise Exception('text required!')
+
+            worker = self.worker_service.get_by_username(username_action)
+            if not worker or not int(worker.status):
+                raise Exception(f"Usuário {username_action} já foi desativado: {worker.noteError}")
+
+            cl = await self.login(worker)
+
+            if not id_target:
+                try: 
+                    info_target = await self.api.get_media_url_info(cl, url_target)
+                except Exception as e:
+                    error_link = True
+                    message_error = f"ERRO worker.comment_action.get_media_url_info: erro quando o usuário da ação de comentar for pegar dos dados do alvo {e}"
+                    is_action = True
+                    raise Exception(message_error)
+                
+                if not info_target or not info_target.pk:
+                    error_link = True
+                    raise Exception('post/media target não encontrado')
+
+                id_target = info_target.pk
+
+            logger.warning(f"{cl.username} will comment: {id_target}")
+
+            
+            try:
+               is_comment, comment = await self.api.comment_media(cl=cl,text=text, media_id=id_target,url=url_target)
+               text = comment.text if comment and hasattr(comment,'text') else text
+            except Exception as e:
+                is_action = True
+                message_error = f'ERRO worker.comment_action.comment_media: commentAction->commentMedia  username {worker.username} proxy {cl.proxy}: {e}'
+                if 'not found' in message_error:
+                    error_link = True
+                raise Exception(message_error)
+            
+            if not is_comment:
+                message_error = f'not comment'
+                logger.error(message_error)
+                self.worker_service.note_error(cl.username,message_error)
+                already_exists = True
+
+            self.worker_service.update_count(cl.username, 1, 'comment', is_comment)
+
+            return {
+                'username_action': username_action,
+                'url_target': url_target,
+                'is_comment': is_comment,
+                'id_target': id_target,
+                'already_exists': already_exists,
+                "text": text,
+                'worker': {
+                    '_id': worker._id,
+                    'username': worker.username,
+                    'status': worker.status,
+                    'noteError': worker.noteError,
+                },
+            }
+        except Exception as e:
+            message_error = f"ERROR: {e}"
+            logger.error(message_error)
+            ExceptionUtility.print_line_error()
+            self.error_action(cl,message_error) if is_action and cl and cl.username else self.worker_service.note_error(username_action,message_error)
+            worker = self.worker_service.get_by_username(username_action) if username_action else None
+            return {
+                'error': message_error,
+                'error_link': error_link,
+                'worker': {
+                    '_id': worker._id if worker else '',
+                    'username': worker.username if worker else username_action,
+                    'status': worker.status if worker else 0,
+                    'noteError': worker.noteError if worker else '',
+                },
+            }
 

@@ -65,3 +65,5 @@ class Routes:
 
         #Instagram - Worker Action
         app.add_url_rule('/instagram/worker/follower-action', 'instagram.follower_action', InstagramWorkerController.follower_action, methods=['GET'])
+        app.add_url_rule('/instagram/worker/like-action', 'instagram.like_action', InstagramWorkerController.like_action, methods=['GET'])
+        app.add_url_rule('/instagram/worker/comment-action', 'instagram.comment_action', InstagramWorkerController.comment_action, methods=['GET'])
