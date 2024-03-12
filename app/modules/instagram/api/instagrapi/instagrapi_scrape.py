@@ -882,7 +882,7 @@ class InstagrapiScrape:
                 logger.error(message_error)
                 raise Exception(message_error)
         else:
-            logger.warning('Extract bio is verified or contains external url, or not contains full name\n')
+            logger.warning('Extract bio is verified or contains external url, or not contains full name')
         return followers_info
 
     async def recent_post_likers_by_url(self,url: str):

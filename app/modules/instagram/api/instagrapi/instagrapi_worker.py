@@ -30,7 +30,7 @@ class InstagrapiWorker:
     #    self.api = api
     
     async def login(self,worker: Worker):
-        print(f'LOGIN WORKER {worker.username} -----------------------------------\n')
+        print(f'LOGIN WORKER {worker.username} -----------------------------------')
         proxy_url = worker.proxy
         cl:Client = None
 
@@ -78,13 +78,13 @@ class InstagrapiWorker:
                 self.worker_service.update_by_id(worker._id,{"proxy":worker.proxy})
 
         if proxy_url:
-            logger.warning(f"PROXY: {proxy_url}\n")
+            logger.warning(f"PROXY: {proxy_url}")
         else:
-            logger.warning(f"SEM PROXY\n")
+            logger.warning(f"SEM PROXY")
             allow_only_proxy = int(self.config_service.get_config_value('allow-only-proxy') or '0')
             if allow_only_proxy:
                 error_proxy = ' ! no proxies ! allow-only-proxy config enable!'
-                print(f"{error_proxy}\n")
+                logger.error(error_proxy)
                 raise Exception(error_proxy)
 
         if cl:
@@ -131,7 +131,7 @@ class InstagrapiWorker:
                     allow_only_proxy = int(self.config_service.get_config_value('allow-only-proxy') or '0')
                     if allow_only_proxy:
                         error_proxy = ' ! no proxies ! allow-only-proxy config enable!'
-                        print(f'{error_proxy}\n')
+                        print(f'{error_proxy}')
                         raise Exception(error_proxy)
                     if obj_account:
                         obj_account.proxy = proxy_url
@@ -172,11 +172,11 @@ class InstagrapiWorker:
     async def error_action(self,cl: Client, message_error: str):
         message_error = 'errorHandling: ' + message_error
         if cl.username:
-            print(f"Error Handling: {cl.username} {message_error}\n")
+            logger.error(f"Error Handling: {cl.username} {message_error}")
             proxy = cl.proxy or 'proxy não detectado'
             message_error = f"{message_error} username {cl.username} proxy {proxy}"
         else:
-            raise Exception(f"Error Handling cl.username without username: {message_error}\n")
+            raise Exception(f"Error Handling cl.username without username: {message_error}")
         worker = self.worker_service.get_by_username(cl.username)
         try:
             cl.get_timeline_feed()
@@ -242,6 +242,8 @@ class InstagrapiWorker:
                     info_target = await self.api.get_user_info(cl, username_target, id_target)
                 except Exception as e:
                     message_error = f"ERRO worker.follower_action.get_user_info: erro quando o usuário da ação de seguir for pegar dos dados do alvo {e}"
+                    if 'not found' in message_error:
+                        error_link = True
                     is_action = True
                     raise Exception(message_error)
                 
@@ -270,6 +272,8 @@ class InstagrapiWorker:
                 message_error = f'ERRO worker.follower_action.follow_by_id: followerAction->followById username {worker.username} proxy {cl.proxy}: {e}'
                 if 'following the max limit' in message_error:
                     max_limit = True
+                if 'not found' in message_error:
+                        error_link = True
                 raise Exception(message_error)
 
            
@@ -336,8 +340,9 @@ class InstagrapiWorker:
                 try: 
                     info_target = await self.api.get_media_url_info(cl, url_target)
                 except Exception as e:
-                    error_link = True
                     message_error = f"ERRO worker.like_action.get_media_url_info: erro quando o usuário da ação de de curtir for pegar dos dados do alvo {e}"
+                    if 'not found' in message_error:
+                        error_link = True
                     is_action = True
                     raise Exception(message_error)
                 
@@ -421,8 +426,9 @@ class InstagrapiWorker:
                 try: 
                     info_target = await self.api.get_media_url_info(cl, url_target)
                 except Exception as e:
-                    error_link = True
                     message_error = f"ERRO worker.comment_action.get_media_url_info: erro quando o usuário da ação de comentar for pegar dos dados do alvo {e}"
+                    if 'not found' in message_error:
+                        error_link = True
                     is_action = True
                     raise Exception(message_error)
                 
@@ -484,3 +490,183 @@ class InstagrapiWorker:
                 },
             }
 
+    async def story_action(self,username_action:str,username_target:str='',id_target:str='',media_id:str='',max=10):
+        error_link = False
+        is_story = False
+        worker:Worker = None
+        is_action = False
+        result = {}
+        try:
+
+            if not username_action:
+                raise Exception('username action required!')
+            if not username_target and not id_target:
+                raise Exception('username_target or id_target required!')
+
+            worker = self.worker_service.get_by_username(username_action)
+            if not worker or not int(worker.status):
+                raise Exception(f"Usuário {username_action} já foi desativado: {worker.noteError}")
+
+            cl = await self.login(worker)
+
+            if not id_target:
+                try:
+                    info_target = await self.api.get_user_info(cl, username_target, id_target)
+                except Exception as e:
+                    message_error = f"ERRO worker.story_action.get_user_info: erro quando o usuário da ação de ver stories for pegar dos dados do alvo {e}"
+                    is_action = True
+                    raise Exception(message_error)
+                
+                if not info_target or not info_target.pk:
+                    error_link = True
+                    raise Exception('username target não encontrado')
+
+                if info_target.is_private:
+                    message_error = f"worker private: {info_target.username}"
+                    logger.error(message_error)
+                    return {
+                        'error': message_error,
+                        'id_target': info_target.pk,
+                        'username_target': info_target.username,
+                        'is_private': True
+                    }
+
+                id_target = info_target.pk
+
+            logger.warning(f"{cl.username} will seen stories: {id_target}")
+
+            try:
+                result = await self.api.seen_stories(cl=cl, username=username_target,pk=id_target,media_id=media_id,max=max)
+                is_story = result.get('success')
+            except Exception as e:
+                is_action = True
+                message_error = f'ERRO worker.story_action.seen_stories: storyAction->seenStories username {worker.username} proxy {cl.proxy}: {e}'
+                raise Exception(message_error)
+
+            if not is_story and result.get('count')<=0:
+                error_link = True
+                return {
+                    'error': 'stories não existe ou não estão mais disponíveis',
+                    'error_link': error_link,
+                    'username': cl.username,
+                }
+            
+            self.worker_service.update_count(cl.username, 1, 'story', is_story)
+        
+            return {
+                'username_action': username_action,
+                'username_target': username_target,
+                'is_story': is_story,
+                'id_target': id_target,
+                'worker': {
+                    '_id': worker._id,
+                    'username': worker.username,
+                    'status': worker.status,
+                    'noteError': worker.noteError,
+                },
+            }
+        except Exception as e:
+            message_error = f"ERROR: {e}"
+            logger.error(message_error)
+            ExceptionUtility.print_line_error()
+            self.error_action(cl,message_error) if is_action and cl and cl.username else self.worker_service.note_error(username_action,message_error)
+            worker = self.worker_service.get_by_username(username_action) if username_action else None
+            return {
+                'error': message_error,
+                'error_link': error_link,
+                'worker': {
+                    '_id': worker._id if worker else '',
+                    'username': worker.username if worker else username_action,
+                    'status': worker.status if worker else 0,
+                    'noteError': worker.noteError if worker else '',
+                },
+            }
+        
+    async def like_comment_action( self,
+        username_action:str,
+        comment_id:str='',
+        username_comment:str='',
+        url_target:str='',
+        id_target:str='',
+        user_id_comment:str='',
+        max:int=100):
+
+        cl:Client = None
+        error_link = False
+        is_liker = False
+        worker:Worker = None
+        info_target = None
+        text = ''
+        is_action = False
+        try:
+
+            if not username_action:
+                raise Exception('worker.like_comment_action username_action required!')
+            if not url_target and  not id_target and not comment_id:
+                raise Exception('like_comment_action url_target or id_target or comment_id required!')
+
+            worker = self.worker_service.get_by_username(username_action)
+            if not worker or not int(worker.status):
+                raise Exception(f"Usuário {username_action} já foi desativado: {worker.noteError}")
+
+            cl = await self.login(worker)
+
+            if not id_target and not comment_id:
+                    try:
+                        info_target = await self.api.get_media_url_info(cl, url_target)
+                        id_target = info_target.pk
+                    except Exception as e:
+                        message_error = f"ERRO worker.like_comment_action.get_media_url_info: erro quando o usuário da ação de curtir comentário for pegar dos dados do alvo {e}"
+                        if 'not found' in message_error:
+                            error_link = True
+                        is_action = True
+                        raise Exception(message_error)
+
+            if not comment_id:
+                image_action, comments, is_comment, username_comment = await self.api.find_user_in_comments(cl=cl, pk=id_target, max=max,username_comment=username_comment,user_id_comment=user_id_comment)
+                if is_comment:
+                    comment_id = comments[0]['comment_id']
+                    text = comments[0]['text']
+            if not comment_id:
+                raise Exception('worker.like_comment_action.find_user_in_comments username do comentário não encontrado')
+                
+            logger.warning(f"{cl.username} will like comment: {id_target}")
+            try:
+                is_liker = await self.api.like_comment_by_id(cl,comment_id)
+            except Exception as e:
+                is_action = True
+                message_error = f'ERRO worker.like_comment_action.like_comment_by_id username {worker.username} proxy {cl.proxy}: {e}'
+                raise Exception(message_error)
+
+            self.worker_service.update_count(cl.username, 1, 'like', is_liker)
+
+            return {
+                'username_action': username_action,
+                'url_target': url_target,
+                'is_liker': is_liker,
+                'id_target': id_target,
+                'comment_id': comment_id,
+                'text': text,
+                'worker': {
+                    '_id': worker._id,
+                    'username': worker.username,
+                    'status': worker.status,
+                    'noteError': worker.noteError,
+                },
+            }
+        except Exception as e:
+            message_error = f"ERROR: {e}"
+            logger.error(message_error)
+            ExceptionUtility.print_line_error()
+            self.error_action(cl,message_error) if is_action and cl and cl.username else self.worker_service.note_error(username_action,message_error)
+            worker = self.worker_service.get_by_username(username_action) if username_action else None
+            return {
+                'error': message_error,
+                'error_link': error_link,
+                'worker': {
+                    '_id': worker._id if worker else '',
+                    'username': worker.username if worker else username_action,
+                    'status': worker.status if worker else 0,
+                    'noteError': worker.noteError if worker else '',
+                },
+            }

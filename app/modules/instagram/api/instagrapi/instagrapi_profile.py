@@ -39,14 +39,14 @@ class InstagrapiProfile:
         cl = Client()
      
         while not logged:
-            print('LOGIN PROFILE ----------------------------------\n')
+            print('LOGIN PROFILE ----------------------------------')
             
             if random:
                 try:
                     profile = self.profile_service.get_random_profile()
                 except Exception as e:
-                    message_error = f'PROFILE LOGIN ERROR random Extract {str(e)}\n'
-                    print(message_error)
+                    message_error = f'PROFILE LOGIN ERROR random Extract {e}'
+                    logger.error(message_error)
                     raise Exception(message_error)
             
             if random_after_error:
@@ -74,13 +74,13 @@ class InstagrapiProfile:
                         cl.set_proxy("")
             
             if proxy_url:
-                print(f'PROXY: {proxy_url}\n')
+                logger.warning(f'PROXY: {proxy_url}')
             else:
-                print(f'SEM PROXY' + '\n')
+                logger.warning(f'SEM PROXY')
                 allow_only_proxy = int(self.config_service.get_config_value('allow-only-proxy') or '0')
                 if allow_only_proxy:
                     error_proxy = ' ! no proxies ! allow-only-proxy config enable!'
-                    print(f'{error_proxy}\n')
+                    print(f'{error_proxy}')
                     raise Exception(error_proxy)
             
             logged = True
@@ -89,7 +89,7 @@ class InstagrapiProfile:
                 if not cl.proxy and proxy_url:
                     cl.set_proxy(proxy_url)
                     changed = True
-                print(f'{profile.username} JÁ ESTAVA LOGADO ',
+                logger.warning(f'{profile.username} JÁ ESTAVA LOGADO ',
                     f'COM {changed if changed else ""} PROXY: {cl.proxy}' if cl.proxy else 'SEM PROXY')
                 self.cookie_service.save_state(username=cl.username,state=cl.get_settings(),pk=cl.user_id)
             else:
@@ -115,8 +115,8 @@ class InstagrapiProfile:
                     if proxy_url:
                         self.proxy_service.update_count(proxy_url)
                 if not logged:
-                    print('sleep no logged\n')
-                    await asyncio.sleep(2) 
+                    logger.warning('sleep no logged')
+                    await asyncio.sleep(1) 
         
         print('END LOGIN --------------------------------')
         return cl
@@ -167,7 +167,7 @@ class InstagrapiProfile:
             message_error = f"{message_error} username {input_login} proxy {proxy}"
             logger.error(message_error)
         else:
-            raise Exception(f"Error Handling: ig.loggedInUser.inputLogin without username {message_error}\n")
+            raise Exception(f"Error Handling: ig.loggedInUser.inputLogin without username {message_error}")
 
         if ('429' in message_error or
                 'wait a few minutes' in message_error or

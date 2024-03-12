@@ -333,10 +333,10 @@ class InstagrapiApi:
             
             if not pk:
                 pk = cl.media_pk_from_url(url)
-            if not return_with_next_max_id and not next_max_id:
-               list_comments = cl.media_comments(media_id=pk, amount = max)
-            else:
-               list_comments, next_max_id = cl.media_comments_chunk(media_id=pk, max_amount=max, min_id = next_max_id)
+            #if not return_with_next_max_id and not next_max_id:
+            #   list_comments = cl.media_comments(media_id=pk, amount = max)
+            #else:
+            list_comments, next_max_id = cl.media_comments_chunk(media_id=pk, max_amount=max, min_id = next_max_id)
 
             count_comments = len(list_comments)
             logger.info(f"Comments received: {count_comments} comments")
@@ -358,7 +358,7 @@ class InstagrapiApi:
             username_comment: str = '', 
             user_id_comment: str = ''
         ) -> Dict[str, Union[str, List[Dict[str, Union[str, int]]]]]:
-        
+        comments = []
         try:
             comments_on_post:List[Comment] = await self.get_comments_on_post(cl, pk=pk, max=max)
             image_action = ''
@@ -366,7 +366,7 @@ class InstagrapiApi:
                 raise Exception('user_id_comment or username_comment required')
             arr_find = [user_id_comment] if user_id_comment else [username_comment]
             filtered = [comment for comment in comments_on_post if comment.user.pk in arr_find or comment.user.username in arr_find]
-            comments = []
+
             is_comment = False
             for pk_or_username in arr_find:
                 data = [comment for comment in filtered if comment.user.pk == pk_or_username or comment.user.username == pk_or_username]
@@ -442,23 +442,27 @@ class InstagrapiApi:
             max:int= 1,
             pk: str = '', 
             media_id: str = ''):
-            seen_result = None
+            
+            success = False
             stories:List[Story] = []
+            count = 0
             try:
                 if not pk:
                     info = await self.get_user_info(cl, username)
                     pk = info.pk
                 stories = await self.get_recent_stories(cl=cl, username=username, max=max, pk=pk, media_id=media_id)
+                count = len(stories)
+                if count<=0:
+                    return {'success':success,'count':count,'stories':stories}
                 stories_pk = [int(story.pk) for story in stories]
-                seen_result = cl.story_seen(stories_pk)
+                success = cl.story_seen(stories_pk)       
             except Exception as err:
                 message_error = f'seen_stories {err}'
                 logger.error(message_error)
                 raise Exception(message_error)
             
             logger.info(f'{cl.username} seen {username} {pk} {len(stories)} stories')
-
-            return {'status': 'ok' if seen_result else 'error', 'list': stories, 'count': len(stories),'seen_result':seen_result}
+            return {'success':success,'count':count,'stories':stories}
     
 
     async def follow_by_id(self,cl: Client, user_id: int | str):
@@ -540,6 +544,24 @@ class InstagrapiApi:
 
             logger.error(message_error)
             raise Exception(message_error)
+        
+    async def like_comment_by_id(self, cl: Client, comment_id: str):
+        try:
+            liked = cl.comment_like(comment_id)
+            if liked:
+                logger.info(f"{cl.username} comment liked comment_id: {comment_id}")
+            else:
+                logger.error(f"{cl.username} comment not liked comment_id: {comment_id}")
+            return liked
+        except Exception as err:
+            ExceptionUtility.print_line_error()
+            name_challenge = InstagrapiChallenge.detect_name_challenge(err)
+            message_error = f"api.like_comment.comment_like_by_id {err} {name_challenge} username {cl.username} proxy {cl.proxy} target {comment_id}"
+            logger.error(message_error)
+            raise Exception(message_error)
+
+        
+
         
             
 

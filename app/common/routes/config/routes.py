@@ -63,7 +63,9 @@ class Routes:
         #Instagram - Profile Action
         app.add_url_rule('/instagram/profile/seen-stories-action', 'instagram.seen_stories_action', InstagramProfileController.seen_stories_action, methods=['GET'])
 
-        #Instagram - Worker Action
+        #Instagram - Worker Action/Edit
         app.add_url_rule('/instagram/worker/follower-action', 'instagram.follower_action', InstagramWorkerController.follower_action, methods=['GET'])
         app.add_url_rule('/instagram/worker/like-action', 'instagram.like_action', InstagramWorkerController.like_action, methods=['GET'])
         app.add_url_rule('/instagram/worker/comment-action', 'instagram.comment_action', InstagramWorkerController.comment_action, methods=['GET'])
+        app.add_url_rule('/instagram/worker/story-action', 'instagram.story_action', InstagramWorkerController.story_action, methods=['GET'])
+        app.add_url_rule('/instagram/worker/like-comment-action', 'instagram.like_comment_action', InstagramWorkerController.like_comment_action, methods=['GET'])
