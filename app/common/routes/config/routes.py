@@ -4,6 +4,7 @@ from app.common.controllers.test_controller import TestController
 from app.modules.proxy.controllers.proxy_controller import ProxyController
 from app.modules.cookie.controllers.cookie_controller import CookieController
 from app.modules.config.controllers.config_controller import ConfigController
+from app.modules.nationality_name.controllers.nationality_name_controller import NationalityNameController
 from app.modules.profile.controllers.profile_controller import ProfileController
 from app.modules.worker.controllers.worker_controller import WorkerController
 from app.modules.instagram.controllers.instagram_scrape_controller import InstagramScrapeController
@@ -27,6 +28,9 @@ class Routes:
 
         #Config
         self.service.create_default_routes(app,'config',ConfigController)
+
+        #NationalityName
+        self.service.create_default_routes(app,'nationality-names',NationalityNameController)
 
         #Profiles
         app.add_url_rule('/profiles/create-many', 'profiles.create_many', ProfileController.create_many, methods=['POST'])

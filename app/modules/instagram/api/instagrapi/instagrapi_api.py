@@ -1,5 +1,5 @@
 from instagrapi import Client
-from instagrapi.types import Media,UserShort,Comment,Story
+from instagrapi.types import Media,UserShort,Comment,Story,Account
 from instagrapi.exceptions import LoginRequired
 from app.modules.cookie.services.cookie_service import CookieService
 from app.common.utilities.logging_utility import LoggingUtility
@@ -7,6 +7,7 @@ from app.modules.instagram.api.instagrapi.instagrapi_challenge import Instagrapi
 from app.common.utilities.exception_utility import ExceptionUtility
 from typing import List,Union,Dict
 from app.modules.instagram.api.instagrapi.types import UserWithImage
+from app.modules.nationality_name.services.profile_generator_service import ProfileGeneratorService
 
 logger = LoggingUtility.get_logger("InstagrapiApi")
     
@@ -559,6 +560,113 @@ class InstagrapiApi:
             message_error = f"api.like_comment.comment_like_by_id {err} {name_challenge} username {cl.username} proxy {cl.proxy} target {comment_id}"
             logger.error(message_error)
             raise Exception(message_error)
+
+    async def edit_profile(
+        self, 
+        cl: Client,
+        new_username:str='',
+        first_name:str='',
+        biography:str='',
+        external_url:str='',
+        phone_number:str='',
+        email:str='',
+        visibility:str='',
+        album:str='',
+        filename:str='',
+        posts_album:str='',
+        posts_quantity:str='',
+        gender:str='',
+        nationality:str='',
+        new_password:str=''
+    ):
+        user:Account = None
+        try:
+            user =  cl.account_info()
+        except Exception as error:
+            message_error = "edit_profile.account_info"
+            name_challenge = InstagrapiChallenge.detect_name_challenge(error)
+            message_error = f"{message_error} {name_challenge}"
+            logger.error(message_error)
+            raise Exception(message_error)
+
+        result = None
+        if (
+            (new_username and new_username != user.username) or
+            (first_name and first_name != user.full_name) or
+            (biography and biography != user.biography) or
+            (external_url and external_url != user.external_url) or
+            (phone_number and phone_number != user.phone_number) or
+            (email and email != user.email) or new_password):
+            gender = gender or str(user.gender)
+            gender = '1' if gender == 'male' else '2' if gender == 'female' else gender
+            profile_options = {
+                "username":new_username or user.username,
+                "full_name":first_name or user.full_name,
+                "biography":biography or user.biography,
+                "external_url":external_url or user.external_url,
+                "phone_number":phone_number or user.phone_number,
+                "email":email or user.email
+            }
+
+            generator_service = ProfileGeneratorService()
+
+            if new_username == 'auto':
+                logger.warning('1.2.0 Generate Name:')
+                if gender:
+                    generated = generator_service.generate_by_gender_nationality(gender,nationality)
+                    profile_options['username'] = generated.username
+                    profile_options['full_name'] = generated.full_name
+                else:
+                    generated = generator_service.generate_simple()
+                    profile_options['username'] = generated.username
+                    profile_options['full_name'] = generated.full_name
+
+            logger.warning('1.2.1 Editar Usuário:')
+            try:
+                result = await cl.account_edit(profile_options)
+                print(result)
+            except Exception as error:
+                raise Exception(f"Erro ao editar: {error} new_username:{profile_options['username']}")
+
+            if cl.password and new_password and new_password == 'auto':
+                logger.warning('1.2.1.1 New Password')
+                new_password = generator_service.password(length=10)
+                logger.warning(f"old_password {cl.password} new_password {new_password}")
+                try:
+                    cl.change_password(cl.password,new_password)
+                    cl.password = new_password
+                except Exception as error:
+                    message_error = f"Erro ao trocar senha {error}"
+                    print(message_error)
+                    raise Exception(message_error)
+
+        if visibility:
+            try:
+                await privateOrPublic(cl, visibility)
+            except Exception as error:
+                message_error = f"Erro ao privar/public perfil {error}"
+                print(message_error)
+                raise Exception(message_error)
+
+        if album and filename:
+            logger.warning('1.2.2 Alterar Imagem do perfil')
+            try:
+                result = await changeProfilePicture(cl, album, filename)
+            except Exception as error:
+                message_error = f"Erro ao fazer upload da foto do perfil: {error}"
+                logger.error(message_error)
+                raise Exception(message_error)
+
+        if posts_album and posts_quantity:
+            logger.warning('1.2.3 Upload de Posts')
+            try:
+                await uploadPostsTreated(cl, posts_album, posts_quantity)
+            except Exception as error:
+                message_error = f"Erro ao fazer upload dos posts {error}"
+                logger.error(message_error)
+                raise Exception(message_error)
+        return cl
+
 
         
 
