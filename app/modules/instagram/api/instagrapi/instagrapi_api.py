@@ -5,23 +5,25 @@ from app.modules.cookie.services.cookie_service import CookieService
 from app.common.utilities.logging_utility import LoggingUtility
 from app.modules.instagram.api.instagrapi.instagrapi_challenge import InstagrapiChallenge
 from app.common.utilities.exception_utility import ExceptionUtility
-from typing import List,Union,Dict
+from typing import List,Union,Dict,Literal
 from app.modules.instagram.api.instagrapi.types import UserWithImage
 from app.modules.nationality_name.services.profile_generator_service import ProfileGeneratorService
+from app.common.utilities.image_utility import ImageUtility
+import asyncio
 
 logger = LoggingUtility.get_logger("InstagrapiApi")
     
 def challenge_code_handler_custom():
-    raise Exception('manual_input_code Verify Code Email/Sms')
+    pass
 
 def manual_change_password_custom():
-    raise Exception('manual_change_password change password New Password')
+    pass
 
 class InstagrapiApi:
     cookie_service = CookieService()
 
     @classmethod
-    async def login_custom(self,username:str,password:str,proxy:str='',verification_mode:str='',return_ig_error:bool=False)->Client:
+    async def login_custom(self,username:str,password:str,proxy:str='',session_id='',verification_mode:str='',return_ig_error:bool=False)->Client:
         print("login_custom")
         """
         Attempts to login to Instagram using either the provided session information
@@ -45,8 +47,8 @@ class InstagrapiApi:
         login_via_session = False
         login_via_pw = False
         message_error = ""
-        #cl.challenge_code_handler = challenge_code_handler_custom()
-        #cl.change_password_handler = manual_change_password_custom()
+        cl.challenge_code_handler = challenge_code_handler_custom()
+        cl.change_password_handler = manual_change_password_custom()
         old_session = {}
         if session:
             try:
@@ -570,7 +572,7 @@ class InstagrapiApi:
         external_url:str='',
         phone_number:str='',
         email:str='',
-        visibility:str='',
+        visibility:Literal['public', 'private', ''] ='',
         album:str='',
         filename:str='',
         posts_album:str='',
@@ -637,21 +639,21 @@ class InstagrapiApi:
                     cl.password = new_password
                 except Exception as error:
                     message_error = f"Erro ao trocar senha {error}"
-                    print(message_error)
+                    logger.error(message_error)
                     raise Exception(message_error)
 
         if visibility:
             try:
-                await privateOrPublic(cl, visibility)
+                self.set_private_or_public(cl, visibility)
             except Exception as error:
                 message_error = f"Erro ao privar/public perfil {error}"
-                print(message_error)
+                logger.error(message_error)
                 raise Exception(message_error)
 
         if album and filename:
             logger.warning('1.2.2 Alterar Imagem do perfil')
             try:
-                result = await changeProfilePicture(cl, album, filename)
+                result = await self.change_profile_picture(cl, album, filename)
             except Exception as error:
                 message_error = f"Erro ao fazer upload da foto do perfil: {error}"
                 logger.error(message_error)
@@ -660,18 +662,146 @@ class InstagrapiApi:
         if posts_album and posts_quantity:
             logger.warning('1.2.3 Upload de Posts')
             try:
-                await uploadPostsTreated(cl, posts_album, posts_quantity)
+                await self.upload_posts_treated(cl, posts_album, posts_quantity)
             except Exception as error:
                 message_error = f"Erro ao fazer upload dos posts {error}"
                 logger.error(message_error)
                 raise Exception(message_error)
+
+    async def set_private_or_public(self,cl: Client, visibility: Literal['public', 'private', ''], attempts:int=3)->bool:
+        try:
+            attempts -= 1
+            result = False
+            if visibility == 'public':
+                logger.warning('1.2.1 Deixar perfil público')
+                result = cl.account_set_public()
+            elif visibility == 'private':
+                logger.warning('1.2.1 Deixar perfil privado')
+                result = cl.account_set_private()
+                if attempts > 0:
+                    info = cl.account_info()
+                    if not info or not info.pk or not info.is_private:
+                        return await self.set_private_or_public(cl, visibility, attempts)
+            return result
+        except Exception as err:
+            message_error = f'Erro private_or_public: {err}'
+            logger.error(message_error)
+            if attempts > 0:
+                return await self.set_private_or_public(cl, visibility, attempts)
+            raise Exception(message_error)
+        
+    
+    async def change_profile_picture(
+        self,
+        cl: Client,
+        album: str,
+        filename: str,
+        attempts: int = 3
+    ) -> Client:
+        try:
+            attempts -= 1
+            picture_path = f'../public/galleries/{album}/{filename}'
+            account = cl.account_change_picture(picture_path)
+            if not account.profile_pic_url or '44884218_345707102882519_2446069589734326272_n.jpg' in account.profile_pic_url:
+                if attempts > 0:
+                        logger.error('Usuário continua sem foto, tentar novamente')
+                        return await self.change_profile_picture(cl, album, filename, attempts)
+                else:
+                     raise Exception("Não consigou alterar as foto após algumas tentativas")
+        except Exception as e:
+            message_error = f'Error change_profile_picture {e}'
+            logger.error(message_error)
+            if attempts > 0:
+                return await self.change_profile_picture(cl, album, filename, attempts)
+            if attempts:
+                raise Exception(message_error)
         return cl
 
+    async def upload_posts_treated(
+        self, 
+        cl:Client, 
+        posts_album: str, 
+        posts_quantity: int, 
+        attempts: int = 5) -> Client:
+        try:
+            attempts -= 1
+            user_info = cl.user_id and cl.user_info(cl.user_id)
+            if not user_info:
+                raise Exception('pk to info not received')
+            if user_info.is_private:
+                cl.account_set_public()
+            if user_info.media_count < posts_quantity:
+                quantity = posts_quantity - user_info.media_count
+                posts = await ImageUtility.random_posts_images_from_album(posts_album, quantity)
+                result = await self.upload_posts(cl, posts)
+                user_info =  user_info = cl.user_id and cl.user_info(cl.user_id)
+                if not user_info:
+                    raise Exception('pk to info not received')
+                if user_info.media_count < posts_quantity:
+                    if attempts > 0:
+                        return await self.upload_posts_treated(cl, posts_album, posts_quantity, attempts)
+                    else:
+                        raise Exception('Não conseguiu fazer upload de post depois de várias tentativas')
+                return result
+        except Exception as err:
+            message_error = f'Erro upload_posts_treated: {err}'
+            logger.error(message_error)
+            if attempts > 0:
+                return await self.upload_posts_treated(cl, posts_album, posts_quantity, attempts)
+            raise Exception(message_error)
+        
+    async def upload_posts(self, cl:Client, posts:List[Dict[str, str]]):
+        try:
+            num_images = len(posts)
+            count_error = 0
+            count_success = 0
+            for i in range(num_images):
+                post = posts[i]
+                picture_path = post.get('picturePath')
+                delay = post.get('delay', 1)
+                
+                logger.warning(f"{cl.username} will upload image {i + 1}/{num_images} in {picture_path}")
+                try:
+                    post = await self.upload_picture(cl, picture_path)
+                except Exception as e:
+                    message_error = f"Error upload_posts.upload_picture {e}"
+                    logger.error(message_error)
+                    count_error += 1
+                
+            
+                count_success += 1
+                
+                await asyncio.sleep(delay)
+            
+            if count_error:
+                logger.error(f"Upload de Posts realizado com {count_error} ERROS e {count_success} sucesso!")
+            else:
+                logger.info(f"Upload de Posts realizado de {count_success} imagens com sucesso!")
+            
+            return {"count_success": count_success, "count_error": count_error}
+        
+        except Exception as e:
+            message_error = f"Upload Post Error {e}"
+            logger.error(message_error)
+            raise Exception(message_error)
+        
+    async def upload_picture(cl: Client, picturePath: str, caption: str = '') -> Media:
+        try:
+            post = cl.photo_upload(picturePath,caption)
+            if post and post.code:
+                link = 'https://www.instagram.com/p/' + post.code
+                logger.info(f"Posted new media: {link}")
+            else:
+                message_error = f"picture not allowed to upload"
+                raise Exception(message_error)
+            return post   
+        except Exception as e:
+            message_error = f"upload_picture: {e}"
+            logger.error(message_error)
+            return {"error": message_error}
+
 
         
 
-        
-            
-
-            
+    
 

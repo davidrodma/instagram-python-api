@@ -1,4 +1,5 @@
 from app.modules.instagram.api.instagrapi.instagrapi_worker import InstagrapiWorker
+from typing import Literal
 
 class InstagramWorkerService:
     api = InstagrapiWorker()    
@@ -34,4 +35,46 @@ class InstagramWorkerService:
             user_id_comment=user_id_comment,
             max=max
         )
+    
+    async def edit_instagram(
+        self,
+        username:str,
+        password:str,
+        new_username:str = '',
+        new_password:str = '',
+        nationality:str = '',
+        gender:str = '',
+        first_name:str = '',
+        biography:str = '',
+        visibility:Literal['public', 'private', ''] ='',
+        album:str = '',
+        filename:str = '',
+        posts_album:str = '',
+        posts_quantity:str = '',
+        email:str = '',
+        external_url:str = '',
+        phone_number:str = '',
+        proxy:str = '',
+        session_id:str = ''):
+
+            return await self.api.edit_instagram(
+                username=username,
+                password=password,
+                new_username=new_username,
+                new_password=new_password,
+                nationality=nationality,
+                gender=gender,
+                first_name=first_name,
+                biography=biography,
+                visibility=visibility,
+                album=album,
+                filename=filename,
+                posts_album=posts_album,
+                posts_quantity=posts_quantity,
+                email=email,
+                external_url=external_url,
+                phone_number=phone_number,
+                proxy=proxy,
+                session_id=session_id
+            )
 

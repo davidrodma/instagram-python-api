@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict,Literal
 from app.modules.worker.services.worker_service import WorkerService
 from app.modules.proxy.services.proxy_service import ProxyService
 from app.modules.proxy.models.proxy import Proxy
@@ -10,6 +10,7 @@ from app.common.utilities.exception_utility import ExceptionUtility
 from app.common.utilities.logging_utility import LoggingUtility
 from app.modules.instagram.api.instagrapi.instagrapi_api import InstagrapiApi
 from app.modules.instagram.api.instagrapi.instagrapi_challenge import InstagrapiChallenge
+from app.common.utilities.image_utility import ImageUtility
 from instagrapi import Client
 
 logger = LoggingUtility.get_logger("InstagrapiWorker")
@@ -670,3 +671,115 @@ class InstagrapiWorker:
                     'noteError': worker.noteError if worker else '',
                 },
             }
+        
+
+    async def edit_instagram(
+        self,
+        username:str,
+        password:str,
+        new_username:str = '',
+        new_password:str = '',
+        nationality:str = '',
+        gender:str = '',
+        first_name:str = '',
+        biography:str = '',
+        visibility:Literal['public', 'private', ''] ='',
+        album:str = '',
+        filename:str = '',
+        posts_album:str = '',
+        posts_quantity:str = '',
+        email:str = '',
+        external_url:str = '',
+        phone_number:str = '',
+        proxy:str = '',
+        session_id:str = ''):
+
+        try:
+            proxy = '' if not proxy or proxy == 'random' else proxy
+            proxyUrl = proxy if proxy else ''
+
+            if not username:
+                raise Exception('username required!')
+            if not password:
+                raise Exception('password required!')
+
+            worker = self.worker_service.get_by_username(username)
+
+            countryCode = worker.nationality if worker else nationality
+
+            if proxyUrl in ['worker', 'boost', 'random', 'extract', 'test']:
+                objProxy = self.proxy_service.random_proxy({'type': proxyUrl, 'countryCode': countryCode})
+                if objProxy and objProxy.url:
+                    proxyUrl = objProxy.url
+                else:
+                    raise Exception(f"Proxy não encontrado tipo {proxyUrl}!")
+
+            if proxyUrl:
+                logger.warning(f'1.1 Usando Proxy: {proxyUrl}\n')
+                if worker:
+                    worker.proxy = proxyUrl
+                proxy = proxyUrl
+
+            try:
+                if worker:
+                    cl = await self.login(worker)
+                else:
+                    cl = await self.api.login_custom(
+                            username=username,
+                            password=password,
+                            proxy=proxy,
+                            session_id=session_id
+                    )
+            except Exception as e:
+                message_error = f"Error edit_instagram.login/login_custom {username}:{password} {proxy} {e}"
+                message_error += f" detected {InstagrapiChallenge.detect_name_challenge(e)} "
+                raise Exception(message_error)
+    
+            try:
+                await self.api.edit_profile(
+                    cl=cl,
+                    new_username=new_password,
+                    first_name=first_name,
+                    biography=biography,
+                    external_url=external_url,
+                    phone_number=phone_number,
+                    email=email,
+                    visibility=visibility,
+                    album=album,
+                    filename=filename,
+                    posts_album=posts_album,
+                    posts_quantity=posts_quantity,
+                    gender=gender,
+                    nationality=nationality,
+                    new_password=new_password
+                ) 
+            except Exception as e:
+                ExceptionUtility.print_line_error()
+                message_error = f"Error edit_instagram.edit_profile {username}:{password} {proxy} {e}"
+                message_error += f" detected {InstagrapiChallenge.detect_name_challenge(e)} "
+                raise Exception(message_error)
+            try:
+                info = await self.api.get_user_info(cl=cl,pk=cl.user_id)
+                imageBase64 = ImageUtility.stream_image_to_base64(info.profile_pic_url.unicode_string(), {'width': 150, 'height': 150}) if info.profile_pic_url else ''
+                new_username = info.username or cl.username or new_username
+                new_password = cl.password or new_password
+                first_name = info.full_name or first_name
+                proxy = cl.proxy or proxy
+            except Exception as e:
+                message_error = f"edit_instagram.get_user_info {e}"
+                message_error = f"Error edit_instagram.edit_profile {username}:{password} {proxy} {e}"
+                raise Exception(message_error)
+
+            logger.info('1.3 Editado com sucesso:')
+            return {
+                'success': True,
+                'imageBase64': imageBase64,
+                'new_username': new_username,
+                'first_name': first_name,
+                'proxy': proxy,
+            }
+        except Exception as e:
+            ExceptionUtility.print_line_error()
+            message_error = 'api.edit_instagram'
+            logger.error(message_error)
+            return {'error': message_error}

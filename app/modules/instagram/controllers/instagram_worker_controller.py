@@ -6,6 +6,7 @@ from app.modules.instagram.dto.like_action_dto import LikeActionDto
 from app.modules.instagram.dto.comment_action_dto import CommentActionDto
 from app.modules.instagram.dto.story_action_dto import StoryActionDto
 from app.modules.instagram.dto.like_comment_action_dto import LikeCommentActionDto
+from app.modules.instagram.dto.edit_instagram_dto import EditInstagramDto
 from app.modules.instagram.services.instagram_worker_service import InstagramWorkerService
 from app.common.utilities.json_enconder import JSONEncoder
 
@@ -84,3 +85,32 @@ class InstagramWorkerController(Controller):
             return JSONEncoder().encode(info)
         except Exception as e:
             return ExceptionUtility.catch_response(e,f'Error ctrl.like_comment_action')
+        
+
+    @classmethod
+    async def edit_instagram(self):
+        try:
+            dto = EditInstagramDto(**request.get_json())
+            info = await self.service.edit_instagram(
+                username=dto.username,
+                password=dto.password,
+                new_username=dto.new_username,
+                new_password=dto.new_password,
+                nationality=dto.nationality,
+                gender=dto.gender,
+                first_name=dto.first_name,
+                biography=dto.biography,
+                visibility=dto.visibility,
+                album=dto.album,
+                filename=dto.filename,
+                posts_album=dto.posts_album,
+                posts_quantity=dto.posts_quantity,
+                email=dto.email,
+                external_url=dto.external_url,
+                phone_number=dto.phone_number,
+                proxy=dto.proxy,
+                session_id=dto.session_id
+            )
+            return JSONEncoder().encode(info)
+        except Exception as e:
+            return ExceptionUtility.catch_response(e,f'Error ctrl.edit_instagram')

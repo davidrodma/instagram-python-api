@@ -1,11 +1,15 @@
-
+from app.modules.config.services.config_service import ConfigService
 import requests
-from typing import Union,Dict, Optional
+from typing import Union,Dict,Optional,List
 import base64
 from PIL import Image
 from io import BytesIO
+import os
+import random
 
 class ImageUtility:
+    
+    config_service = ConfigService()
 
     @classmethod
     def stream_image_to_base64(self,url: str, resize_options: Optional[Dict[str, Union[int, None]]] = None) -> str:
@@ -36,3 +40,27 @@ class ImageUtility:
             image = buffered.getvalue()
         
         return 'data:image/png;base64,' + base64.b64encode(image).decode('utf-8')
+        
+    @classmethod
+    async def random_posts_images_from_album(self, album: str, quantity: int) -> List[Dict[str, str]]:
+        posts = []
+        pictures_path = f'../public/galleries/{album}/'
+        images = os.listdir(pictures_path)
+        random.shuffle(images)
+        num_images = len(images)
+        config = self.config_service.get_config_value('delay-random-upload-post')
+        arr = config.split(',') if config else None
+        delay_start, delay_end = map(int, arr) if arr else (0, 0)
+
+        for i in range(quantity):
+            index = i if i < num_images else random.randint(0,num_images - 1)
+            image = images[index]
+            random_delay = random.randint(delay_start,delay_end)
+            posts.append({
+                'picturePath': os.path.join(pictures_path, image),
+                'delay': random_delay,
+                'album': album,
+                'file': image,
+            })
+        return posts
+
