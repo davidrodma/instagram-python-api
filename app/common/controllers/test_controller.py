@@ -6,7 +6,7 @@ from app.modules.profile.models.profile import Profile
 from app.common.utilities.logging_utility import LoggingUtility
 from app.common.utilities.exception_utility import ExceptionUtility
 from app.database.repositories.mongo_repository import MongoRepository
-from app.modules.nationality_name.services.profile_generator_service import ProfileGeneratorUtility
+from app.modules.nationality_name.services.profile_generator_service import ProfileGeneratorService
 logger = LoggingUtility.get_logger("Test")
 
 class TestController():
@@ -17,7 +17,7 @@ class TestController():
 
    def test():
       try:
-         profile_generator = ProfileGeneratorUtility()
+         profile_generator = ProfileGeneratorService()
          results = {
             "username":profile_generator.username(),
             "password":profile_generator.password(),

@@ -14,7 +14,7 @@ class EditInstagramDto(BaseModel):
     album:str = ''
     filename:str = ''
     posts_album:str = ''
-    posts_quantity:str = ''
+    posts_quantity:int = 0
     email:str = ''
     external_url:str = ''
     phone_number:str = ''

@@ -4,6 +4,7 @@ from typing import List,Iterable,Dict
 from app.common.types.paginate_options import PaginateOptions
 from app.common.types.id import ID
 from app.modules.nationality_name.types.name_gender_nationality_generated_type import NameGenderNationalityGenerated
+from app.common.utilities.exception_utility import ExceptionUtility
 import random
 
 class NationalityNameService:
@@ -85,10 +86,20 @@ class NationalityNameService:
     
     @classmethod
     def generate(self,gender:str='female', nationality:str='') -> NameGenderNationalityGenerated:
-        name = self.generate_full_name(gender, nationality)
-        username = self.generate_username(name['roman'])
-        full_name = self.emoji_full_name(name['native'], gender)
-        return {'username': username, 'full_name': full_name}
+        try:
+            name = self.generate_full_name(gender, nationality)
+            username = self.generate_username(name['roman'])
+            full_name = self.emoji_full_name(name['native'], gender)
+            fields = {
+                        'username': username, 
+                        'full_name': full_name
+                    }
+            result = NameGenderNationalityGenerated(**fields)
+            return result
+        except Exception as e:
+            message_error = f"nationality_name_service.generate {e}"
+            ExceptionUtility.print_line_error()
+            raise Exception(message_error)
         
     @classmethod
     def generate_full_name(self,gender: str, nationality: str) -> Dict[str, str]:
@@ -96,8 +107,15 @@ class NationalityNameService:
         last_name =  self.get_one_random({'type': 'lastname', 'nationality': nationality, 'status': 1})
         if not last_name and (nationality == 'BR' or nationality == 'KR'):
             last_name = self.get_one_random({'type': 'name', 'gender': gender, 'nationality': nationality, 'status': 1})
-        full_name = f"{first_name.nativeName} {last_name.nativeName}" if first_name and last_name else f"{first_name.romanName} {last_name.romanName}" if first_name else f"{last_name.romanName}"
-        roman = f"{first_name['romanName']} {last_name['romanName']}" if first_name and last_name else f"{first_name.romanName}"
+        if first_name and first_name.nativeName and last_name and last_name.nativeName:
+            full_name = f"{first_name.nativeName} {last_name.nativeName}".strip()
+            roman = f"{first_name.romanName} {last_name.romanName}".strip()
+        elif first_name and first_name.nativeName:
+            full_name = f"{first_name.nativeName}".strip()
+            roman = f"{first_name.romanName} {last_name.romanName}".strip()
+        else:
+            full_name = f"{first_name.romanName} {last_name.romanName}".strip()
+            roman = full_name
         return {'native': full_name, 'roman': roman}
     
     @classmethod
@@ -115,7 +133,7 @@ class NationalityNameService:
         return username
     
     @classmethod
-    def emoji_full_name(full_name: str, gender: str) -> str:
+    def emoji_full_name(self,full_name: str, gender: str) -> str:
         if gender == 'female':
             possibilities = [False, False, True, False]
             enable_emoji = random.choice(possibilities)

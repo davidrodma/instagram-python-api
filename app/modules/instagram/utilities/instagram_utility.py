@@ -31,6 +31,7 @@ class InstagramUtility:
     def is_error_session(self,error: str) -> bool:
         message_error = error.lower()
         return ('login_required' in message_error or
+                'LoginRequired' in message_error or
                 'user_has_logged_out' in message_error or
                 'not extract userid' in message_error)
     

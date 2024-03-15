@@ -576,7 +576,7 @@ class InstagrapiApi:
         album:str='',
         filename:str='',
         posts_album:str='',
-        posts_quantity:str='',
+        posts_quantity:int=0,
         gender:str='',
         nationality:str='',
         new_password:str=''
@@ -585,7 +585,7 @@ class InstagrapiApi:
         try:
             user =  cl.account_info()
         except Exception as error:
-            message_error = "edit_profile.account_info"
+            message_error = f"edit_profile.account_info {error}"
             name_challenge = InstagrapiChallenge.detect_name_challenge(error)
             message_error = f"{message_error} {name_challenge}"
             logger.error(message_error)
@@ -600,7 +600,7 @@ class InstagrapiApi:
             (phone_number and phone_number != user.phone_number) or
             (email and email != user.email) or new_password):
             gender = gender or str(user.gender)
-            gender = '1' if gender == 'male' else '2' if gender == 'female' else gender
+            gender_number = '1' if gender == 'male' else '2' if gender == 'female' else gender
             profile_options = {
                 "username":new_username or user.username,
                 "full_name":first_name or user.full_name,
@@ -622,21 +622,25 @@ class InstagrapiApi:
                     generated = generator_service.generate_simple()
                     profile_options['username'] = generated.username
                     profile_options['full_name'] = generated.full_name
-
-            logger.warning('1.2.1 Editar Usuário:')
+            logger.warning(f"username {cl.username} -> new username {profile_options['username']}")
+            logger.warning(f"1.2.1 Editar Usuário: {profile_options}")
             try:
-                result = await cl.account_edit(profile_options)
+                result = cl.account_edit(**profile_options)
+                if new_username:
+                    self.cookie_service.save_state(username=cl.username,state=cl.get_settings(),pk=cl.user_id)
                 print(result)
             except Exception as error:
-                raise Exception(f"Erro ao editar: {error} new_username:{profile_options['username']}")
+                raise Exception(f"Erro ao editar edit_profile.account_edit: {error} new_username:{profile_options['username']}")
 
-            if cl.password and new_password and new_password == 'auto':
+            if cl.password and new_password and cl.password != new_password:
                 logger.warning('1.2.1.1 New Password')
-                new_password = generator_service.password(length=10)
+                new_password = generator_service.password(length=10) if new_password == 'auto' else new_password
                 logger.warning(f"old_password {cl.password} new_password {new_password}")
                 try:
                     cl.change_password(cl.password,new_password)
                     cl.password = new_password
+                    cl = await self.login_custom(username=cl.username,password=cl.password,proxy=cl.proxy)
+                    self.cookie_service.save_state(username=cl.username,state=cl.get_settings(),pk=cl.user_id)
                 except Exception as error:
                     message_error = f"Erro ao trocar senha {error}"
                     logger.error(message_error)
@@ -644,7 +648,7 @@ class InstagrapiApi:
 
         if visibility:
             try:
-                self.set_private_or_public(cl, visibility)
+                await self.set_private_or_public(cl, visibility)
             except Exception as error:
                 message_error = f"Erro ao privar/public perfil {error}"
                 logger.error(message_error)
@@ -659,7 +663,7 @@ class InstagrapiApi:
                 logger.error(message_error)
                 raise Exception(message_error)
 
-        if posts_album and posts_quantity:
+        if posts_album and posts_quantity and posts_quantity>0:
             logger.warning('1.2.3 Upload de Posts')
             try:
                 await self.upload_posts_treated(cl, posts_album, posts_quantity)
@@ -701,19 +705,22 @@ class InstagrapiApi:
         try:
             attempts -= 1
             picture_path = f'../public/galleries/{album}/{filename}'
-            account = cl.account_change_picture(picture_path)
-            if not account.profile_pic_url or '44884218_345707102882519_2446069589734326272_n.jpg' in account.profile_pic_url:
+            try:
+                account = cl.account_change_picture(picture_path)
+            except Exception as e:
+                raise Exception(f'PIC: change_profile_picture.account_change_picture->{e}')
+            if not account.profile_pic_url or '44884218_345707102882519_2446069589734326272_n.jpg' in account.profile_pic_url.unicode_string():
                 if attempts > 0:
                         logger.error('Usuário continua sem foto, tentar novamente')
                         return await self.change_profile_picture(cl, album, filename, attempts)
                 else:
-                     raise Exception("Não consigou alterar as foto após algumas tentativas")
+                     raise Exception("Não conseguiu alterar as foto após algumas tentativas")
         except Exception as e:
-            message_error = f'Error change_profile_picture {e}'
+            message_error = f'Error change_profile_picture.account_change_picture (attemp {attempts}): {e}'
             logger.error(message_error)
             if attempts > 0:
                 return await self.change_profile_picture(cl, album, filename, attempts)
-            if attempts:
+            else:
                 raise Exception(message_error)
         return cl
 
@@ -725,7 +732,7 @@ class InstagrapiApi:
         attempts: int = 5) -> Client:
         try:
             attempts -= 1
-            user_info = cl.user_id and cl.user_info(cl.user_id)
+            user_info = await self.get_user_info(cl=cl,pk=cl.user_id)
             if not user_info:
                 raise Exception('pk to info not received')
             if user_info.is_private:
@@ -734,17 +741,18 @@ class InstagrapiApi:
                 quantity = posts_quantity - user_info.media_count
                 posts = await ImageUtility.random_posts_images_from_album(posts_album, quantity)
                 result = await self.upload_posts(cl, posts)
-                user_info =  user_info = cl.user_id and cl.user_info(cl.user_id)
-                if not user_info:
-                    raise Exception('pk to info not received')
-                if user_info.media_count < posts_quantity:
+                user_info =  await self.get_user_info(cl=cl,pk=cl.user_id)
+                if not user_info or not user_info.pk:
+                    raise Exception('pk to user info not received')
+                if user_info.media_count < quantity:
                     if attempts > 0:
-                        return await self.upload_posts_treated(cl, posts_album, posts_quantity, attempts)
+                        logger.error(f"Ainda faltam {quantity} imagens de post, tentar novamente (attemps: {attempts})")
+                        return await self.upload_posts_treated(cl, posts_album, quantity, attempts)
                     else:
                         raise Exception('Não conseguiu fazer upload de post depois de várias tentativas')
                 return result
         except Exception as err:
-            message_error = f'Erro upload_posts_treated: {err}'
+            message_error = f'Erro upload_posts_treated (attemps: {attempts}): {err} '
             logger.error(message_error)
             if attempts > 0:
                 return await self.upload_posts_treated(cl, posts_album, posts_quantity, attempts)
@@ -785,7 +793,7 @@ class InstagrapiApi:
             logger.error(message_error)
             raise Exception(message_error)
         
-    async def upload_picture(cl: Client, picturePath: str, caption: str = '') -> Media:
+    async def upload_picture(self,cl: Client, picturePath: str, caption: str = '') -> Media:
         try:
             post = cl.photo_upload(picturePath,caption)
             if post and post.code:

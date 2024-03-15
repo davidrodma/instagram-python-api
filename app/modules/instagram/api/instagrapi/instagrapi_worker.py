@@ -93,10 +93,8 @@ class InstagrapiWorker:
                 cl.set_proxy(proxy_url)
            
 
-            logger.info(
-                f"{worker.username} JÁ ESTAVA LOGADO ",
-                f"COM PROXY: {cl.proxy}" if cl.proxy else "SEM PROXY"
-            )
+            logger.warning(f"{worker.username} JÁ ESTAVA LOGADO ")
+            logger.warning(f"COM PROXY: {cl.proxy}" if cl.proxy else "SEM PROXY")
             self.cookie_service.save_state(username=cl.username,state=cl.get_settings(),pk=cl.user_id)
 
         else:
@@ -687,7 +685,7 @@ class InstagrapiWorker:
         album:str = '',
         filename:str = '',
         posts_album:str = '',
-        posts_quantity:str = '',
+        posts_quantity:int = 0,
         email:str = '',
         external_url:str = '',
         phone_number:str = '',
@@ -738,7 +736,7 @@ class InstagrapiWorker:
             try:
                 await self.api.edit_profile(
                     cl=cl,
-                    new_username=new_password,
+                    new_username=new_username,
                     first_name=first_name,
                     biography=biography,
                     external_url=external_url,
@@ -757,6 +755,9 @@ class InstagrapiWorker:
                 ExceptionUtility.print_line_error()
                 message_error = f"Error edit_instagram.edit_profile {username}:{password} {proxy} {e}"
                 message_error += f" detected {InstagrapiChallenge.detect_name_challenge(e)} "
+                if 'LoginRequired' in message_error:
+                    logger.error('LoginRequired')
+                    self.clean_session(cl.username)
                 raise Exception(message_error)
             try:
                 info = await self.api.get_user_info(cl=cl,pk=cl.user_id)
@@ -770,16 +771,18 @@ class InstagrapiWorker:
                 message_error = f"Error edit_instagram.edit_profile {username}:{password} {proxy} {e}"
                 raise Exception(message_error)
 
+            self.cookie_service.save_state(username=cl.username,state=cl.get_settings(),pk=cl.user_id)
             logger.info('1.3 Editado com sucesso:')
             return {
                 'success': True,
                 'imageBase64': imageBase64,
                 'new_username': new_username,
+                'new_password': new_password,
                 'first_name': first_name,
                 'proxy': proxy,
             }
         except Exception as e:
             ExceptionUtility.print_line_error()
-            message_error = 'api.edit_instagram'
+            message_error = f"api.edit_instagram: {e}"
             logger.error(message_error)
             return {'error': message_error}

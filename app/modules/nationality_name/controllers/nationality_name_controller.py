@@ -7,12 +7,14 @@ from app.common.dto.status_dto import StatusDto
 from app.common.dto.ids_dto import IdsDto
 from app.common.utilities.exception_utility import ExceptionUtility
 from app.modules.nationality_name.services.nationality_name_service import NationalityNameService
+from app.modules.nationality_name.services.profile_generator_service import ProfileGeneratorService
 from app.modules.nationality_name.dto.nationality_name_create_dto import NationalityNameCreateDto
 from app.modules.nationality_name.dto.nationality_name_update_dto import NationalityNameUpdateDto
 from app.modules.nationality_name.dto.generate_name_dto import GenerateNameDto
 
 class NationalityNameController(Controller):
     service = NationalityNameService()
+    profile_generator_service = ProfileGeneratorService()
     
     @classmethod
     def paginate(self):
@@ -83,10 +85,18 @@ class NationalityNameController(Controller):
              return ExceptionUtility.catch_response(e,'Error Status')
         
     @classmethod
-    def generate_name():
+    def generate_name(self):
         try:
             dto = GenerateNameDto(**request.get_json())
-            result = NationalityNameService.generate(dto.gender, dto.nationality)
-            return jsonify({'result': result})
+            generated = self.service.generate(dto.gender, dto.nationality)
+            return JSONEncoder().encode(generated)
+        except Exception as e:
+            return ExceptionUtility.catch_response(e,'Error generate_name')
+        
+    @classmethod
+    def generate_simple_profile(self):
+        try:
+            generated = self.profile_generator_service.generate_simple()
+            return JSONEncoder().encode(generated)
         except Exception as e:
             return ExceptionUtility.catch_response(e,'Error generate_name')

@@ -4,11 +4,11 @@ import string
 from app.modules.nationality_name.services.nationality_name_service import NationalityNameService
 from app.modules.nationality_name.types.simple_profile_generated_type import SimpleProfileGenerated
 from app.modules.nationality_name.types.name_gender_nationality_generated_type import NameGenderNationalityGenerated
+from app.common.utilities.exception_utility import ExceptionUtility
 
 class ProfileGeneratorService:
-    def __init__(self):
-        self.faker = Faker()
-        self.nationality_name_service = NationalityNameService()
+    faker = Faker()
+    nationality_name_service = NationalityNameService()
 
     @classmethod
     def username(self,length=20):
@@ -36,13 +36,18 @@ class ProfileGeneratorService:
     
     @classmethod
     def generate_simple(self)->SimpleProfileGenerated:
-        fields = {
-            "username":self.username(),
-            "password":self.password(),
-            "full_name":self.full_name(),
-            "birth":self.birth()
-        }
-        return SimpleProfileGenerated(**fields)
+        try:
+            fields = {
+                "username":self.username(),
+                "password":self.password(),
+                "full_name":self.full_name(),
+                "birth":self.birth()
+            }
+            return SimpleProfileGenerated(**fields)
+        except Exception as e:
+            message_error = f"profile_generator_service.generate_simple {e}"
+            ExceptionUtility.print_line_error()
+            raise Exception(message_error)
     
     @classmethod
     def generate_by_gender_nationality(self,gender:str='female', nationality:str='')->NameGenderNationalityGenerated:
