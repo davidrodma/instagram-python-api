@@ -7,6 +7,7 @@ from app.modules.config.controllers.config_controller import ConfigController
 from app.modules.nationality_name.controllers.nationality_name_controller import NationalityNameController
 from app.modules.profile.controllers.profile_controller import ProfileController
 from app.modules.worker.controllers.worker_controller import WorkerController
+from app.modules.boost.controllers.boost_controller import BoostController
 from app.modules.instagram.controllers.instagram_scrape_controller import InstagramScrapeController
 from app.modules.instagram.controllers.instagram_profile_controller import InstagramProfileController
 from app.modules.instagram.controllers.instagram_worker_controller import InstagramWorkerController
@@ -41,6 +42,9 @@ class Routes:
         #Workers
         app.add_url_rule('/workers/create-many', 'workers.create_many', WorkerController.create_many, methods=['POST'])
         self.service.create_default_routes(app,'workers',WorkerController)
+
+        #Boost
+        self.service.create_default_routes(app,'boosts',BoostController)
 
         #Instagram - Scrape
         app.add_url_rule('/instagram/scrape/user-info', 'instagram_scrape.user_info', InstagramScrapeController.user_info, methods=['GET'])
