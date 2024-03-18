@@ -208,6 +208,7 @@ class InstagrapiWorker:
                     cl.set_uuids(old_session["uuids"])
                 self.cookie_service.save_state(username=cl.username,state=cl.get_settings(),pk=cl.user_id)       
             if self.workers_cl.get(username):
+                print(f"DELETE cookies username {username}")
                 del self.workers_cl[username]
         except Exception as e:
             ExceptionUtility.print_line_error()
@@ -691,7 +692,7 @@ class InstagrapiWorker:
         phone_number:str = '',
         proxy:str = '',
         session_id:str = ''):
-
+        
         try:
             proxy = '' if not proxy or proxy == 'random' else proxy
             proxyUrl = proxy if proxy else ''
@@ -720,6 +721,8 @@ class InstagrapiWorker:
 
             try:
                 if worker:
+                    if password:
+                        worker.password = password
                     cl = await self.login(worker)
                 else:
                     cl = await self.api.login_custom(
@@ -734,7 +737,7 @@ class InstagrapiWorker:
                 raise Exception(message_error)
     
             try:
-                await self.api.edit_profile(
+                cl = await self.api.edit_profile(
                     cl=cl,
                     new_username=new_username,
                     first_name=first_name,
@@ -756,22 +759,26 @@ class InstagrapiWorker:
                 message_error = f"Error edit_instagram.edit_profile {username}:{password} {proxy} {e}"
                 message_error += f" detected {InstagrapiChallenge.detect_name_challenge(e)} "
                 if 'LoginRequired' in message_error:
-                    logger.error('LoginRequired')
+                    logger.error('LoginRequired 2')
                     self.clean_session(cl.username)
                 raise Exception(message_error)
             try:
-                info = await self.api.get_user_info(cl=cl,pk=cl.user_id)
+                info = await self.api.get_user_info(cl=cl,username=cl.username,pk=cl.user_id)
                 imageBase64 = ImageUtility.stream_image_to_base64(info.profile_pic_url.unicode_string(), {'width': 150, 'height': 150}) if info.profile_pic_url else ''
                 new_username = info.username or cl.username or new_username
                 new_password = cl.password or new_password
                 first_name = info.full_name or first_name
                 proxy = cl.proxy or proxy
             except Exception as e:
-                message_error = f"edit_instagram.get_user_info {e}"
-                message_error = f"Error edit_instagram.edit_profile {username}:{password} {proxy} {e}"
+                message_error = f"Error edit_instagram.get_user_info {username}:{password} {proxy} {e}"
                 raise Exception(message_error)
 
             self.cookie_service.save_state(username=cl.username,state=cl.get_settings(),pk=cl.user_id)
+            if worker and (new_username or new_password):
+                self.worker_service.update_by_id(worker._id,{
+                    "username":new_username if new_username else worker.username,
+                    "password":new_password if new_password else worker.password,
+                })
             logger.info('1.3 Editado com sucesso:')
             return {
                 'success': True,

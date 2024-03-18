@@ -112,7 +112,7 @@ class InstagrapiApi:
                 ExceptionUtility.print_line_error()
                 name_challenge =''
                 #name_challenge = InstagrapiChallenge.detect_name_challenge(e)
-                message_error = f"login by login_via_pw ->  Couldn't login user using username {username} and pw, {proxy} {name_challenge}: {e}"
+                message_error = f"login by login_via_pw ->  Couldn't login user using username {username} and pw {password}, {proxy} {name_challenge}: {e}"
                 logger.error(message_error)
         
         if message_error:
@@ -126,7 +126,7 @@ class InstagrapiApi:
     async def get_user_info(self,cl: Client, username:str = '', pk='')->UserWithImage:
         user:UserWithImage = None
         if not username and not pk:
-                raise Exception('username or pk required!')
+                raise Exception('get_user_info: username or pk required!')
         if not pk:
             try:
                 print('username ',cl.username,'get user info by username', username)
@@ -580,7 +580,7 @@ class InstagrapiApi:
         gender:str='',
         nationality:str='',
         new_password:str=''
-    ):
+    )->Client:
         user:Account = None
         try:
             user =  cl.account_info()
@@ -639,6 +639,10 @@ class InstagrapiApi:
                 try:
                     cl.change_password(cl.password,new_password)
                     cl.password = new_password
+                    old_session = cl.get_settings()
+                    cl.set_settings({})
+                    cl.set_uuids(old_session["uuids"])
+                    self.cookie_service.save_state(username=cl.username,state=cl.get_settings(),pk=cl.user_id)
                     cl = await self.login_custom(username=cl.username,password=cl.password,proxy=cl.proxy)
                     self.cookie_service.save_state(username=cl.username,state=cl.get_settings(),pk=cl.user_id)
                 except Exception as error:
@@ -671,6 +675,7 @@ class InstagrapiApi:
                 message_error = f"Erro ao fazer upload dos posts {error}"
                 logger.error(message_error)
                 raise Exception(message_error)
+        return cl
 
     async def set_private_or_public(self,cl: Client, visibility: Literal['public', 'private', ''], attempts:int=3)->bool:
         try:
@@ -729,7 +734,7 @@ class InstagrapiApi:
         cl:Client, 
         posts_album: str, 
         posts_quantity: int, 
-        attempts: int = 5) -> Client:
+        attempts: int = 5):
         try:
             attempts -= 1
             user_info = await self.get_user_info(cl=cl,pk=cl.user_id)
@@ -737,10 +742,11 @@ class InstagrapiApi:
                 raise Exception('pk to info not received')
             if user_info.is_private:
                 cl.account_set_public()
-            if user_info.media_count < posts_quantity:
-                quantity = posts_quantity - user_info.media_count
+            quantity = posts_quantity - user_info.media_count if user_info.media_count < posts_quantity else 0
+            logger.warning(f'1.2.3.1 Remains Upload Posts {quantity}')
+            if quantity>0:
                 posts = await ImageUtility.random_posts_images_from_album(posts_album, quantity)
-                result = await self.upload_posts(cl, posts)
+                await self.upload_posts(cl, posts)
                 user_info =  await self.get_user_info(cl=cl,pk=cl.user_id)
                 if not user_info or not user_info.pk:
                     raise Exception('pk to user info not received')
@@ -750,7 +756,6 @@ class InstagrapiApi:
                         return await self.upload_posts_treated(cl, posts_album, quantity, attempts)
                     else:
                         raise Exception('Não conseguiu fazer upload de post depois de várias tentativas')
-                return result
         except Exception as err:
             message_error = f'Erro upload_posts_treated (attemps: {attempts}): {err} '
             logger.error(message_error)
