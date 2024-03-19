@@ -120,7 +120,7 @@ class BoostService:
                     
                     if config:
                         arr = config.split(',')
-                        disable_few_minutes = int(arr[1]) if len(arr) > 1 else int(arr[0])
+                        disable_few_minutes = int(arr[2]) if len(arr) > 1 else int(arr[0])
                     
                     update['$inc'] = {'countError': 1, 'countFewMinutes': 1}
                     update["$set"]['fewMinutesAt'] = datetime.utcnow()
@@ -144,9 +144,7 @@ class BoostService:
                 if boost.countFewMinutes >= disable_few_minutes:
                    self.disable(boost.username, f"disable error because config disable-few-minutes: {error}")
                 elif boost.proxy:
-                    if not self.proxy_service.is_proxy_fixed('boost') and \
-                            boost.typeProxy != 'buy-proxy' and \
-                            not self.proxy_service.is_buy_proxy(boost.proxy):
+                    if not self.proxy_service.is_proxy_fixed('boost'):
                         boost.proxy = 'random'
                         boost = self.find_one_and_update(boost._id,{"proxy":boost.proxy})
             return boost
@@ -213,7 +211,10 @@ class BoostService:
                     'noteError': reason,
                     'expireAt': expire_at
                 })
-                update.update({'$inc': {'countError': 1}})
+                if InstagramUtility.is_blocked(reason):
+                    update.update({'$inc': {'countError': 1, 'countBlocked': 1 }})
+                else:
+                    update.update({'$inc': {'countError': 1}})
             return self.find_one_and_update({'username': username}, update)
         except Exception as e:
             message_error = f'boost_service->disable: {e}'
@@ -222,7 +223,7 @@ class BoostService:
         
 
     @classmethod
-    def check_count_challenge(self,username: str, error: str = '', check_challenge: bool = False) -> None:
+    def check_count_challenge(self,username: str, error: str = '', check_challenge: bool = False) -> Boost:
         try:
             update = {}
             disable_challenge = 0
@@ -243,7 +244,7 @@ class BoostService:
             if disable_challenge > 0 and boost and boost.countChallenge >= disable_challenge:
                 self.disable(boost.username, f'disable error because config disable-challenge: {error}')
             elif boost and boost.proxy:
-                if not self.proxy_service.is_proxy_fixed('boost') and boost.typeProxy != 'buy-proxy' and not self.proxy_service.is_buy_proxy(boost.proxy):
+                if not self.proxy_service.is_proxy_fixed('boost'):
                     boost = self.find_one_and_update({'username': username}, {"proxy":"random"})
             return boost
         except Exception as e:

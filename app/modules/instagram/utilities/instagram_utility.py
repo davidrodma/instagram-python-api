@@ -50,3 +50,13 @@ class InstagramUtility:
                 'account details were deleted' in message_error or
                 'password' in message_error or
                 'timed out' in message_error)
+    
+
+    @classmethod
+    def is_blocked(message_error: str) -> bool:
+        if (
+            ("login" in message_error and any(x in message_error for x in ["been disabled", "not found", "username you entered", "challenge_required", "checkpoint_required"])) or
+            "password" in message_error
+        ):
+            return True
+        return False
