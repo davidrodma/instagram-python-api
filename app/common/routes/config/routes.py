@@ -11,6 +11,7 @@ from app.modules.boost.controllers.boost_controller import BoostController
 from app.modules.instagram.controllers.instagram_scrape_controller import InstagramScrapeController
 from app.modules.instagram.controllers.instagram_profile_controller import InstagramProfileController
 from app.modules.instagram.controllers.instagram_worker_controller import InstagramWorkerController
+from app.modules.instagram.controllers.instagram_boost_controller import InstagramBoostController
 
 class Routes:
     service = RouteService()
@@ -80,3 +81,11 @@ class Routes:
         app.add_url_rule('/instagram/worker/story-action', 'instagram_worker.story_action', InstagramWorkerController.story_action, methods=['POST'])
         app.add_url_rule('/instagram/worker/like-comment-action', 'instagram_worker.like_comment_action', InstagramWorkerController.like_comment_action, methods=['POST'])
         app.add_url_rule('/instagram/worker/edit-instagram', 'instagram_worker.edit_instagram', InstagramWorkerController.edit_instagram, methods=['POST'])
+        
+        #Instagram - Boost Action/Save with Login
+        app.add_url_rule('/instagram/boost/save', 'instagram_boost.edit_instagram', InstagramBoostController.save, methods=['POST'])
+        app.add_url_rule('/instagram/boost/follower-action', 'instagram_boost.follower_action', InstagramBoostController.follower_action, methods=['POST'])
+        app.add_url_rule('/instagram/boost/like-action', 'instagram_boost.like_action', InstagramBoostController.like_action, methods=['POST'])
+        app.add_url_rule('/instagram/boost/comment-action', 'instagram_boost.comment_action', InstagramBoostController.comment_action, methods=['POST'])
+        app.add_url_rule('/instagram/boost/story-action', 'instagram_boost.story_action', InstagramBoostController.story_action, methods=['POST'])
+        app.add_url_rule('/instagram/boost/like-comment-action', 'instagram_boost.like_comment_action', InstagramBoostController.like_comment_action, methods=['POST'])

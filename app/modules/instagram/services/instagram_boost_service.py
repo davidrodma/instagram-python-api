@@ -3,6 +3,25 @@ from app.modules.instagram.api.instagrapi.instagrapi_boost import InstagrapiBoos
 class InstagramBoostService:
     api = InstagrapiBoost()    
 
+    async def save(
+        self,
+        username:str,
+        password:str,
+        accountId:str,
+        socialId:str,
+        proxy:str="random",
+        status:int=1,
+        countryCode:str=""):
+            return await self.api.save(
+                username=username,
+                password=password,
+                accountId=accountId,
+                socialId=socialId,
+                proxy=proxy,
+                status=status,
+                countryCode=countryCode
+            )
+    
     async def follower_action(self,username_action:str,username_target:str='',id_target:str=''):
         return await self.api.follower_action(username_action,username_target,id_target)
     

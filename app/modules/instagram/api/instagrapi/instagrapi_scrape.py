@@ -4,10 +4,12 @@ from typing import List,Dict,Union
 from app.modules.instagram.api.instagrapi.instagrapi_api import InstagrapiApi
 from app.modules.instagram.api.instagrapi.instagrapi_profile import InstagrapiProfile
 from app.modules.instagram.api.instagrapi.instagrapi_worker import InstagrapiWorker
+from app.modules.instagram.api.instagrapi.instagrapi_boost import InstagrapiBoost
 from app.modules.instagram.api.instagrapi.instagrapi_helper import InstagrapiHelper
 from app.modules.instagram.api.instagrapi.types import UserWithImage,User,Media,MediaWithImage,StoryWithImage
 from app.modules.profile.services.profile_service import ProfileService
 from app.modules.worker.services.worker_service import WorkerService
+from app.modules.boost.services.boost_service import BoostService
 from app.common.utilities.exception_utility import ExceptionUtility
 from app.common.utilities.image_utility import ImageUtility
 from app import app
@@ -28,8 +30,10 @@ class InstagrapiScrape:
         self.api = InstagrapiApi()
         self.instagrapi_profile = InstagrapiProfile()
         self.instagrapi_worker = InstagrapiWorker()
+        self.instagrapi_boost = InstagrapiBoost()
         self.profile_service = ProfileService()
         self.worker_service = WorkerService()
+        self.boost_service = BoostService()
 
     def type_scrape_by_port(self):
          port =  app.config.get('SERVER_PORT')
@@ -48,7 +52,8 @@ class InstagrapiScrape:
             worker = self.worker_service.get_random_worker()
             cl = await self.instagrapi_worker.login(worker)
         elif 'boost'==type:
-            raise Exception("Not implement")
+            boost = self.boost_service.get_random_boost()
+            cl = await self.instagrapi_boost.login(boost)
         else:
             try:
                 profile = self.profile_service.get_random_profile()
@@ -78,7 +83,7 @@ class InstagrapiScrape:
                     if type=="worker":
                        self.worker_service.update_count(cl.username, 1)
                     elif type=="boost":
-                        raise Exception("Not implement")
+                       self.boost_service.update_count(cl.username, 1)
                     else:
                         self.profile_service.update_count(cl.username, 1)
                     if hasattr(info,'profile_pic_url') and not noImage:

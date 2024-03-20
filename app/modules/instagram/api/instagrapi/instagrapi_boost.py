@@ -66,7 +66,7 @@ class InstagrapiBoost:
             try:
                 proxy = self.proxy_service.random_proxy({
                     'type': 'boost',
-                    'countryCode': boost.nationality,
+                    'countryCode': boost.countryCode,
                 })
             except Exception as e:
                 message_error = f"boostapi.follower.random_proxy {e}"
@@ -102,7 +102,7 @@ class InstagrapiBoost:
             try:
                 cl = await self.api.login_custom(
                     username = boost.username,
-                    password = boost.password,
+                    password =  Cryptography.decrypt(boost.password),
                     proxy = proxy_url
                 )
             except Exception as e:
@@ -160,7 +160,7 @@ class InstagrapiBoost:
                     )
                 except Exception as e:
                     message_error = f"boost.first_login_boost.login_custom: {e}"
-                    msg = await self.error_first_login_to_user(message_error)
+                    msg = await self.message_error_first_login_to_user(message_error)
                     attempts += 1
                     if msg.get('attempt') and attempts < 3:
                         loop = True
@@ -183,8 +183,8 @@ class InstagrapiBoost:
              accountId:str,
              socialId:str,
              proxy:str="random",
-             status=1,
-             countryCode=""
+             status:int=1,
+             countryCode:str=""
         ):
         cl:Client = None
         boost:Boost = None
@@ -200,7 +200,7 @@ class InstagrapiBoost:
                     if error:
                         return error
                 except Exception as e:
-                    message_error = "api.boost.save.first_login_boost"
+                    message_error = f"api.boost.save.first_login_boost {e}"
                     raise Exception(message_error)
                 if cl.proxy:
                     proxy = cl.proxy
@@ -305,7 +305,7 @@ class InstagrapiBoost:
             self.boost_service.note_error(boost.username, f"login message error: {message_error}")
 
 
-    async def error_first_login_to_user(self,message_error: str) -> Dict:
+    async def message_error_first_login_to_user(self,message_error: str) -> Dict:
         message_error = message_error.lower()
 
         if ' 429 ' in message_error or 'wait a few minutes' in message_error or self.proxy_service.is_proxy_error(message_error):
@@ -374,7 +374,6 @@ class InstagrapiBoost:
             else:
                 self.boost_service.note_error(cl.username, message_error)
         return message_error
-
     
     async def clean_session(self,username: str):
         try:  
