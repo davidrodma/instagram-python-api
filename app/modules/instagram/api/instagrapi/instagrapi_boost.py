@@ -102,7 +102,8 @@ class InstagrapiBoost:
             try:
                 cl = await self.api.login_custom(
                     username = boost.username,
-                    password =  Cryptography.decrypt(boost.password),
+                    #password =  Cryptography.decrypt(boost.password),
+                    password=boost.password,
                     proxy = proxy_url
                 )
             except Exception as e:
@@ -139,9 +140,16 @@ class InstagrapiBoost:
                 logger.warning(f'LOGIN BOOST ATTEMPT: {attempts + 1} -----------------------------------')
 
                 if proxy == 'random':
-                    proxy_data = self.proxy_service.random_proxy(type='boost',countryCode=countryCode)
-                    if proxy_data:
-                        proxy_url = proxy_data.url
+                    try:
+                        proxy_data = self.proxy_service.random_proxy({
+                            'type': 'boost',
+                            'countryCode':countryCode,
+                        })
+                        if proxy_data:
+                            proxy_url = proxy_data.url
+                    except Exception as e:
+                        message_error = f"boostapi.follower.random_proxy {e}"
+                        logger.warning(message_error)            
 
                 if proxy_url:
                     logger.warning(f'PROXY: {proxy_url}')
@@ -160,6 +168,8 @@ class InstagrapiBoost:
                     )
                 except Exception as e:
                     message_error = f"boost.first_login_boost.login_custom: {e}"
+                    logger.error(message_error)
+                    ExceptionUtility.print_line_error()
                     msg = await self.message_error_first_login_to_user(message_error)
                     attempts += 1
                     if msg.get('attempt') and attempts < 3:
@@ -172,10 +182,14 @@ class InstagrapiBoost:
             cl = await self.change_proxy(cl, 'boost-action')
             self.boosts_cl[username] = cl
             logger.warning('END LOGIN --------------------------------')
-            return cl,''
+            message_error = ''
+            return cl,message_error
 
         except Exception as e:
-            return {'error': str(e)}
+            message_error = f"first_login_boost: {e}"
+            logger.error(message_error)
+            ExceptionUtility.print_line_error(message_error)
+            return cl,message_error
     
     async def save(self,
              username:str,
@@ -201,6 +215,8 @@ class InstagrapiBoost:
                         return error
                 except Exception as e:
                     message_error = f"api.boost.save.first_login_boost {e}"
+                    logger.error(message_error)
+                    ExceptionUtility.print_line_error()
                     raise Exception(message_error)
                 if cl.proxy:
                     proxy = cl.proxy
@@ -225,7 +241,8 @@ class InstagrapiBoost:
                     "disabledAt":None,
                 }
                 if password:
-                    params["password"] = Cryptography.encrypt(password)
+                    #params["password"] = Cryptography.encrypt(password)
+                    params["password"] = password
                     params["noteError"] = 'ATIVADO manualmente pelo usuário'
         
                 id = self.boost_service.create(params)
@@ -239,7 +256,8 @@ class InstagrapiBoost:
                     "status": status
                 }
                 if password:
-                    params['password'] = Cryptography.encrypt(password)
+                    #params['password'] = Cryptography.encrypt(password)
+                    params['password'] = password
                     params['noteError'] = 'ATIVADO manualmente pelo usuário'
                     if boost.noteErrorBefore and InstagramUtility.is_blocked(boost.noteErrorBefore):
                         params['countUnblocked'] = boost.countUnblocked +1

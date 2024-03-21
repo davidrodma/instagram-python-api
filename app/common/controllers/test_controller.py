@@ -32,8 +32,9 @@ class TestController():
 
    def test():
       try:
-         results = Cryptography.decrypt("4461140aeed5da7f:4b9cf0c048e005ef")
-         return jsonify({'result':results})
+         encrypt = Cryptography.encrypt("$3123!BR23&*")
+         decrypt = Cryptography.decrypt(encrypt)
+         return jsonify({'decrypt':decrypt,'encrypt':encrypt})
       except Exception as e:
             message_error = f'ERRO 2: {e}'
             print(message_error)

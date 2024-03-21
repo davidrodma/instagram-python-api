@@ -120,7 +120,7 @@ class ProxyService:
             return proxy
 
         except Exception as e:
-            message_error = f"ProxyController.random_proxy: {e}"
+            message_error = f"proxy_service.random_proxy: {e}"
             print(message_error)
             raise Exception(message_error)
         
