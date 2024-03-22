@@ -1,0 +1,72 @@
+{
+  "cookies": {
+    "version": "tough-cookie@4.1.3",
+    "storeType": "MemoryCookieStore",
+    "rejectPublicSuffixes": true,
+    "enableLooseMode": false,
+    "allowSpecialUseDomain": true,
+    "prefixSecurity": "silent",
+    "cookies": []
+  },
+  "device": {
+    "language": "en_US",
+    "radioType": "wifi-none",
+    "connectionType": "WIFI",
+    "timezoneOffset": "-10800",
+    "isLayoutRTL": false,
+    "id": "android-a7e0af1cc90c4cc2",
+    "descriptor": "29/10; 480dpi; 1080x2159; HUAWEI/HONOR; OXF-AN10; HWOXF; kirin990",
+    "uuid": "46b4064b-d5ed-5767-b012-a1d610806baa",
+    "phoneId": "7ddaaa9e-a97a-523d-a452-0d15e6c13bc9",
+    "adid": "dd94b27b-6653-5d81-b364-d0280b44ca16",
+    "build": "NBD92Y",
+    "familyId": "41b5417b-60d8-58c0-9745-bf1e9ad9074b"
+  },
+  "session": {
+    "thumbnailCacheBustingValue": 1000,
+    "adsOptOut": false,
+    "igWWWClaim": "hmac.AR0GREeS0azvsQQkJavdcOyJm_ncqHC7J-MB3Lp84oLI1XE6",
+    "passwordEncryptionKeyId": "78",
+    "passwordEncryptionPubKey": "LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUF5WnZtdm9JK1BJQ0VHcmoyTFVHWgoya2xLb281K3pGZlFGOVpmMDVETm5HSS9HVDR4SEljdHBUQ0VzNW45ZlVSQkVLSXBDd1FLTTdCNGc4M3RnbHFlCmNWT1lydDRLeVp0ODhIUGhPNEk4YU80cHFWK3pPSVY0ZDlzaXUvSFVuVEdRRTRhTEdIYmhVOE1tQjl3eE53UGgKSW9kdU43aWRvQ3RjMDg4aG42TXVacEhqaUxRdkh6djNFNCsyQWc4eW9uR0k4Wkcxb2MxVFhBb3lZUHNmQ00vagpYbG12b2JNVlk2eE5zSGgzWmpDaVg5dHg0SFlJMjlBOVpsNER5QndudFR4SFM2bjBlVHVkNFZFWVhiTEEyRjdGCmZaU2ZEbSsrcWZZK3Nha1VuK1Vaa3FDcG0wZ1JLTW43L0JaMGRMbkx5MTdLWnd4bFROZnlrZlZkaERoVTA1V1kKZlFJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tCg==",
+    "regionHint": "",
+    "shbid": "8433,50357153730,1742672066:01f71f14414f6c3ddc969be0721c2749ae9ab41ba5fbd08b200a3e530f4b02eb3e037515",
+    "shbts": "1711136066,50357153730,1742672066:01f7448cd5ae59bdf2e913e64d5b48523e19d99932b16eccf374b5749d07fba269d9dd20",
+    "rur": "NCG,50357153730,1742672066:01f7a2b0a41f45e4cc93dfba24e34e91c7351a87ee50af15ac9b2d3ca1349a19c73ea13c",
+    "dsUserId": "50357153730",
+    "xMid": "Zf3dPgABAAG1fjUSoCItCVACTq2n",
+    "authorization": "Bearer IGT:2:eyJkc191c2VyX2lkIjoiNTAzNTcxNTM3MzAiLCJzZXNzaW9uaWQiOiI1MDM1NzE1MzczMCUzQXd4NDRpemZhYXFCZVNZJTNBMSUzQUFZZHpLaGkxaVdQeVZsUWU2QzlmbVVrbXI0cnE2UndaWDZHRk1pNW93dyJ9"
+  },
+  "application": {
+    "APP_VERSION": "310.0.0.37.328",
+    "APP_VERSION_CODE": "543594164",
+    "BREADCRUMB_KEY": "iN4$aGr0m",
+    "FACEBOOK_ANALYTICS_APPLICATION_ID": "567067343352427",
+    "BLOKS_VERSION_ID": "0b2dd08da942fa238aa6c422dac119a326d36cfcd55ea6b8b4d908a71807bed5",
+    "CAPABILITIES": "3brTv10=",
+    "SUPPORTED_CAPABILITIES": [
+      {
+        "name": "SUPPORTED_SDK_VERSIONS",
+        "value": "119.0,120.0,121.0,122.0,123.0,124.0,125.0,126.0,127.0,128.0,129.0,130.0,131.0,132.0,133.0,134.0,135.0,136.0,137.0,138.0,139.0,140.0"
+      },
+      { "name": "FACE_TRACKER_VERSION", "value": "14" },
+      { "name": "segmentation", "value": "segmentation_enabled" },
+      { "name": "COMPRESSION", "value": "ETC2_COMPRESSION" },
+      { "name": "world_tracker", "value": "world_tracker_enabled" },
+      { "name": "gyroscope", "value": "gyroscope_enabled" }
+    ],
+    "LAUNCHER_MOBILE_CONFIG": [
+      {
+        "unit_type": "1",
+        "query_hash": "b75d780f1c4cb7ae635c0c24e5dad1cb8d8d0a8c97a412f11978fb61d981d352"
+      },
+      {
+        "unit_type": "2",
+        "query_hash": "9bf0ced529d12963dcdc957cc1618f041675a66ee2609abb4a2d2f7f1527019c"
+      }
+    ]
+  },
+  "clientSessionIdLifetime": 35103856,
+  "pigeonSessionIdLifetime": 24096718,
+  "bandwidthTotalBytesB": "0",
+  "bandwidthTotalTimeMS": "0"
+}

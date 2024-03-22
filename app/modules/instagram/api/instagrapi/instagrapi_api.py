@@ -50,13 +50,18 @@ class InstagrapiApi:
         cl.challenge_code_handler = challenge_code_handler_custom()
         cl.change_password_handler = manual_change_password_custom()
         old_session = {}
-        if session:
+        if session or session_id:
             try:
                 logger.warning(f'Cookie session state found and kept')
-                cl.set_settings(session)
-                old_session = cl.get_settings()
-                cl.login(username, password)
-                # check if session is valid
+                if session:
+                    cl.set_settings(session)
+                    old_session = cl.get_settings()
+                
+                if session_id:
+                    logger.warning(f'login_via_session_id')
+                    cl.login_by_sessionid(sessionid=session_id)
+                else:
+                    cl.login(username, password)
                 try:
                     cl.get_timeline_feed()
                 except LoginRequired:
