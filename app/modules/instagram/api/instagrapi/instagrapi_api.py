@@ -9,6 +9,7 @@ from typing import List,Union,Dict,Literal
 from app.modules.instagram.api.instagrapi.types import UserWithImage
 from app.modules.nationality_name.services.profile_generator_service import ProfileGeneratorService
 from app.common.utilities.image_utility import ImageUtility
+from app.modules.instagram.utilities.android_device import AndroidDevice
 import asyncio
 
 logger = LoggingUtility.get_logger("InstagrapiApi")
@@ -56,6 +57,8 @@ class InstagrapiApi:
                 if session:
                     cl.set_settings(session)
                     old_session = cl.get_settings()
+                else:
+                    cl = await self.add_device(cl,username)
                 
                 if session_id:
                     logger.warning(f'login_via_session_id')
@@ -69,7 +72,9 @@ class InstagrapiApi:
                     old_session = cl.get_settings()
                     # use the same device uuids across logins
                     cl.set_settings({})
+                    cl.set_device(old_session["device_settings"])
                     cl.set_uuids(old_session["uuids"])
+                    cl.set_user_agent()
                     try:
                         cl.login(username, password)
                     except Exception as e: 
@@ -93,13 +98,14 @@ class InstagrapiApi:
         if not login_via_session:
             try:
                 logger.info(f"Attempting to login via username {username} and password")
+                cl.set_settings({})
                 if bool(old_session) and old_session.get("uuids"):
+                    cl.set_device(old_session["device_settings"])
                     cl.set_uuids(old_session["uuids"])
+                    cl.set_user_agent()
                 else:
-                    cl.set_settings({})   
+                    cl = await self.add_device(cl,username)
                 
-                #cl.set_settings({})
-
                 if cl.login(username, password):
                     message_error = ""
                     logger.warning(f'Input Login accepted')
@@ -126,6 +132,15 @@ class InstagrapiApi:
             raise Exception(message_error)
         
         logger.info(f"Logged in {cl.username} { 'via password' if login_via_pw else 'via session'}")
+        return cl
+    
+
+    @classmethod
+    async def add_device(self, cl: Client, username:str)->Client:
+        device = AndroidDevice.generate(username)
+        cl.set_device(device.device_settings)
+        cl.set_uuids(device.uuids)
+        cl.set_user_agent()
         return cl
 
     async def get_user_info(self,cl: Client, username:str = '', pk='')->UserWithImage:
@@ -817,7 +832,6 @@ class InstagrapiApi:
             message_error = f"upload_picture: {e}"
             logger.error(message_error)
             return {"error": message_error}
-
 
         
 

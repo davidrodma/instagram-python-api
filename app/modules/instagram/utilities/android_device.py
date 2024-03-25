@@ -1,7 +1,8 @@
 from typing import List
 import random
 from datetime import datetime, timezone, timedelta
-from devices import devices, builds
+from app.modules.instagram.utilities.devices import devices,builds
+import uuid
 
 class AndroidDevice:
     def __init__(self):
@@ -57,7 +58,7 @@ class AndroidDevice:
         }
     
     @property
-    def settings(self) -> dict:
+    def device_settings(self) -> dict:
         details = self.details
         device_parts = self.descriptor.split(';')
         dpi, device, cpu = device_parts[1],device_parts[5],device_parts[6]
@@ -80,20 +81,27 @@ class AndroidDevice:
             "cpu": cpu,
             "version_code":version_code
          }
-
+    
+    @property
+    def uuids(self) -> dict:
+        return {
+            "phone_id": self.phoneId,
+            "uuid": self.uuid,
+            "advertising_id": self.adid,
+            "android_device_id": self.id
+        }
 
     @staticmethod
     def generate(seed: str) -> 'AndroidDevice':
         random.seed(seed)  # Use a semente para geração de números aleatórios
         device = AndroidDevice()
-        device.id = f'android-{random.randint(10000000, 99999999)}'
+        device.id = f'android-{uuid.uuid5(uuid.NAMESPACE_DNS, str(random.randint(10000000, 99999999)))}'
         device.descriptor = random.choice(devices)
-        device.uuid = str(random.randint(10000000, 99999999))
-        device.phoneId = str(random.randint(10000000, 99999999))
-        device.adid = str(random.randint(10000000, 99999999))
+        device.uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(random.randint(10000000, 99999999))))
+        device.phoneId = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(random.randint(10000000, 99999999))))
+        device.adid = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(random.randint(10000000, 99999999))))
         device.build = random.choice(builds)
-        device.familyId = str(random.randint(10000000, 99999999))
-
+        device.familyId = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(random.randint(10000000, 99999999))))
         return device
     
 
@@ -114,6 +122,7 @@ class AndroidDevice:
 # print('phoneId ',device.phoneId)
 # print('familyId ',device.familyId)
 # print('settings ',device.settings)
+# print('uuids ',device.uuids)
 
 
 

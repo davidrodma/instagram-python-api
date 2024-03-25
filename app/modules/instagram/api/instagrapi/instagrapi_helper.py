@@ -11,7 +11,7 @@ class InstagrapiHelper():
         after_ip = cl._send_public_request("https://api.ipify.org/")
         print(f"Before: {before_ip}")
         print(f"After: {after_ip}")
-        return before_ip!=after_ip
+        return {'success':before_ip!=after_ip,'before_ip':before_ip,"after_ip":after_ip}
     
     @classmethod
     async def get_image_base64_from_post(self,post:Union[MediaWithImage,StoryWithImage], size: dict = {"width": 150, "height": 150}):

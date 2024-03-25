@@ -57,12 +57,11 @@ class InstagrapiProfile:
                 if max_attempts<0:
                     raise Exception('no profile')
                 continue
-            
             proxy = None
             if not proxy_url:
                 try:
                     proxy = self.proxy_service.random_proxy(type='extract')
-                    proxy_url = proxy['url'] if proxy else proxy_url
+                    proxy_url = proxy.url if proxy else proxy_url
                 except Exception as e:
                     pass
             if profile.username in self.profiles_cl:

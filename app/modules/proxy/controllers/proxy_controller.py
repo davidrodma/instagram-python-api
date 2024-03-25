@@ -9,6 +9,7 @@ from app.common.utilities.exception_utility import ExceptionUtility
 from app.modules.proxy.services.proxy_service import ProxyService
 from app.modules.proxy.dto.proxy_create_dto import ProxyCreateDto
 from app.modules.proxy.dto.proxy_update_dto import ProxyUpdateDto
+from app.modules.proxy.dto.test_proxy_dto import TestProxyDto
 
 class ProxyController(Controller):
     service = ProxyService()
@@ -80,3 +81,14 @@ class ProxyController(Controller):
             return jsonify({'message': f'{modified_count} records updated successfully','success': True})
         except Exception as e:
              return ExceptionUtility.catch_response(e,'Error Status')
+        
+
+    @classmethod
+    def test_proxy(self):
+        try:
+            dto = TestProxyDto(**request.get_json())
+            result = self.service.test_proxy(dto.proxy)
+            return jsonify(result)
+        except Exception as e:
+             return ExceptionUtility.catch_response(e,'Error Test Proxy')
+

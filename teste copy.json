@@ -1,52 +1,37 @@
 {
-  "cookies": {
-    "version": "tough-cookie@4.1.3",
-    "storeType": "MemoryCookieStore",
-    "rejectPublicSuffixes": true,
-    "enableLooseMode": false,
-    "allowSpecialUseDomain": true,
-    "prefixSecurity": "silent",
-    "cookies": []
+  "uuids": {
+    "phone_id": "312ed64b-a62e-57c0-bdcc-11a6b6f3c30e",
+    "uuid": "7e8e555c-4717-590b-b830-5fd38b3fde18",
+    "client_session_id": "bf6077ca-508a-4c2e-881c-e96ada53848b",
+    "advertising_id": "4b772f34-c307-5ba3-9de1-171b4aa67097",
+    "android_device_id": "android-8bfa0658-1df0-5c41-ab0e-a80da1436d76",
+    "request_id": "d5a0119c-1807-4fdb-86be-e14d29d4f650",
+    "tray_session_id": "79e5b409-191f-49e0-9eda-17d13bcfe6cb"
   },
-  "device": {
-    "language": "en_US",
-    "radioType": "wifi-none",
-    "connectionType": "WIFI",
-    "timezoneOffset": "-10800",
-    "isLayoutRTL": false
+  "mid": "ZgGPpgABAAG06XosrzbpBDimL4bw",
+  "ig_u_rur": null,
+  "ig_www_claim": null,
+  "authorization_data": {
+    "ds_user_id": "7052607032",
+    "sessionid": "7052607032%3ATvRYzIHJ7OxtCM%3A16%3AAYdstJ-XfQKC70mn5edQK_cdFaP7LzmETq7Ks50DRQ"
   },
-  "session": { "thumbnailCacheBustingValue": 1000, "adsOptOut": false },
-  "application": {
-    "APP_VERSION": "310.0.0.37.328",
-    "APP_VERSION_CODE": "543594164",
-    "BREADCRUMB_KEY": "iN4$aGr0m",
-    "FACEBOOK_ANALYTICS_APPLICATION_ID": "567067343352427",
-    "BLOKS_VERSION_ID": "0b2dd08da942fa238aa6c422dac119a326d36cfcd55ea6b8b4d908a71807bed5",
-    "CAPABILITIES": "3brTv10=",
-    "SUPPORTED_CAPABILITIES": [
-      {
-        "name": "SUPPORTED_SDK_VERSIONS",
-        "value": "119.0,120.0,121.0,122.0,123.0,124.0,125.0,126.0,127.0,128.0,129.0,130.0,131.0,132.0,133.0,134.0,135.0,136.0,137.0,138.0,139.0,140.0"
-      },
-      { "name": "FACE_TRACKER_VERSION", "value": "14" },
-      { "name": "segmentation", "value": "segmentation_enabled" },
-      { "name": "COMPRESSION", "value": "ETC2_COMPRESSION" },
-      { "name": "world_tracker", "value": "world_tracker_enabled" },
-      { "name": "gyroscope", "value": "gyroscope_enabled" }
-    ],
-    "LAUNCHER_MOBILE_CONFIG": [
-      {
-        "unit_type": "1",
-        "query_hash": "b75d780f1c4cb7ae635c0c24e5dad1cb8d8d0a8c97a412f11978fb61d981d352"
-      },
-      {
-        "unit_type": "2",
-        "query_hash": "9bf0ced529d12963dcdc957cc1618f041675a66ee2609abb4a2d2f7f1527019c"
-      }
-    ]
+  "cookies": {},
+  "last_login": 1711378366.0985987,
+  "device_settings": {
+    "app_version": "269.0.0.18.75",
+    "android_version": 29,
+    "android_release": "10",
+    "dpi": " 450dpi",
+    "resolution": "1080x2148",
+    "manufacturer": " samsung",
+    "device": " d1",
+    "model": " SM-N970F",
+    "cpu": " exynos9825",
+    "version_code": "314665256"
   },
-  "clientSessionIdLifetime": 16669717,
-  "pigeonSessionIdLifetime": 58119667,
-  "bandwidthTotalBytesB": "0",
-  "bandwidthTotalTimeMS": "0"
+  "user_agent": "Instagram 269.0.0.18.75 Android (29/10;  450dpi; 1080x2148;  samsung;  SM-N970F;  d1;  exynos9825; en_US; 314665256)",
+  "country": "US",
+  "country_code": 1,
+  "locale": "en_US",
+  "timezone_offset": -14400
 }

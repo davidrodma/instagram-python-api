@@ -23,6 +23,7 @@ class Routes:
 
         #Proxies
         app.add_url_rule('/proxies/create-many', 'proxies.create_many', ProxyController.create_many, methods=['POST'])
+        app.add_url_rule('/proxies/test-proxy', 'proxies.test_proxy', ProxyController.test_proxy, methods=['GET'])
         self.service.create_default_routes(app,'proxies',ProxyController)
 
         #Cookies

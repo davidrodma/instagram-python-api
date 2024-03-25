@@ -5,6 +5,7 @@ from typing import List,Iterable
 from app.common.types.paginate_options import PaginateOptions
 from app.common.types.id import ID
 from datetime import datetime
+from app.modules.instagram.api.instagrapi.instagrapi_helper import InstagrapiHelper
 
 class ProxyService:
 
@@ -236,3 +237,8 @@ class ProxyService:
             if arr[key]:
                 return True
         return False
+    
+    @classmethod
+    def test_proxy(self,proxy:str):
+        return InstagrapiHelper.test_proxy(proxy)
+
