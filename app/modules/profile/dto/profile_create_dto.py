@@ -1,5 +1,5 @@
 # app/models/profile.py
-from datetime import datetime
+from datetime import datetime,timezone
 from typing import  Optional
 from pydantic import BaseModel
 
@@ -7,7 +7,7 @@ class ProfileCreateDto(BaseModel):
     username: str
     password: str
     provider: Optional[str] = ''
-    createdAt: datetime = datetime.utcnow()
+    createdAt: datetime = datetime.now(timezone.utc).replace(tzinfo=None)
     status: int = 1
     groupType:str = ""
     noteErrorBefore:str = ""

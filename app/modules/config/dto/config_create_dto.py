@@ -1,5 +1,5 @@
 # app/models/config.py
-from datetime import datetime
+from datetime import datetime,timezone
 from typing import  Optional
 from pydantic import BaseModel
 
@@ -11,5 +11,5 @@ class ConfigCreateDto(BaseModel):
     value: Optional[str] = ''
     jsonOptions: Optional[str] = ''
     classAdd: Optional[str] = ''
-    createdAt: datetime = datetime.utcnow()
+    createdAt: datetime = datetime.now(timezone.utc).replace(tzinfo=None)
     status: int = 1

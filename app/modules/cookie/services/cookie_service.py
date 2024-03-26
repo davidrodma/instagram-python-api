@@ -5,7 +5,7 @@ from app.modules.cookie.models.cookie import Cookie
 from typing import List,Iterable
 from app.common.types.paginate_options import PaginateOptions
 from app.common.types.id import ID
-from datetime import datetime
+from datetime import datetime,timezone
 import json
 
 class CookieService:
@@ -103,14 +103,14 @@ class CookieService:
           self.update_by_id(cookie._id,{
             "state":stateStr,
             "username":username,
-            "updatedAt":  datetime.utcnow()
+            "updatedAt":  datetime.now(timezone.utc).replace(tzinfo=None)
           })
       else:
           self.create({
               "username":username,
               "pk":pk,
               "state":stateStr,
-              "createdAt":datetime.utcnow()
+              "createdAt":datetime.now(timezone.utc).replace(tzinfo=None)
           })
 
     def remove_by_username(self,username):

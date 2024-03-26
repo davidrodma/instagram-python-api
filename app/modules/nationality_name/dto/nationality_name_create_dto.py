@@ -1,6 +1,4 @@
-# app/models/nationality_name.py
-from datetime import datetime
-from typing import  Optional
+from datetime import datetime,timezone
 from pydantic import BaseModel
 
 class NationalityNameCreateDto(BaseModel):
@@ -9,5 +7,5 @@ class NationalityNameCreateDto(BaseModel):
     gender: str = ''
     nationality: str
     type: str
-    createdAt: datetime = datetime.utcnow()
+    createdAt: datetime = datetime.now(timezone.utc).replace(tzinfo=None)
     status: int = 1

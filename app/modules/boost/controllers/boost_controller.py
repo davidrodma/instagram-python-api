@@ -10,6 +10,7 @@ from app.modules.boost.services.boost_service import BoostService
 from app.modules.boost.dto.boost_create_dto import BoostCreateDto
 from app.modules.boost.dto.boost_update_dto import BoostUpdateDto
 from app.modules.boost.dto.boost_disable_dto import BoostDisableDto
+from app.modules.boost.dto.boost_disable_social_id_dto import BoostDisableSocialIdDto
 from app.modules.config.services.config_service import ConfigService
 
 class BoostController(Controller):
@@ -93,3 +94,21 @@ class BoostController(Controller):
             return JSONEncoder().encode(obj) if obj else (jsonify({'error': 'Record not found'}), 404)
         except Exception as e:
              return ExceptionUtility.catch_response(e,'Error disable')
+    
+    @classmethod
+    def disable_by_social_id(self):
+        try:
+            dto = BoostDisableSocialIdDto(**request.get_json())
+            obj = self.service.disable_by_social_id(dto.socialId, dto.reason)
+            return jsonify({'success': True}) if obj else (jsonify({'error': 'Record not found'}), 404)
+        except Exception as e:
+             return ExceptionUtility.catch_response(e,'Error disable_by_social_id')
+    
+    @classmethod
+    def active_by_social_id(self):
+        try:
+            dto = BoostDisableSocialIdDto(**request.get_json())
+            obj = self.service.active_by_social_id(dto.socialId)
+            return jsonify({'success': True}) if obj else (jsonify({'error': 'Record not found'}), 404)
+        except Exception as e:
+             return ExceptionUtility.catch_response(e,'Error active_by_social_id')

@@ -4,7 +4,7 @@ from app.modules.config.services.config_service import ConfigService
 from typing import List,Iterable
 from app.common.types.paginate_options import PaginateOptions
 from app.common.types.id import ID
-from datetime import datetime
+from datetime import datetime,timezone
 from app.modules.instagram.api.instagrapi.instagrapi_helper import InstagrapiHelper
 
 class ProxyService:
@@ -140,7 +140,7 @@ class ProxyService:
                     update = {
                         'noteError': f"Desabilitar proxy porque o ip está bloqueado no momento! {error}",
                         'status': 0,
-                        'fewMinutesAt': datetime.utcnow(),
+                        'fewMinutesAt': datetime.now(timezone.utc).replace(tzinfo=None),
                     }
                 elif ('few minutes' in error or ' 429 ' in error or self.is_proxy_error(error)) and check_few_minutes:
                     config = ConfigService.get_config_value('limit-proxy-few-minutes')
@@ -157,7 +157,7 @@ class ProxyService:
                         limit_proxy_few_minutes = int(arr[1] if is_bot and arr[1] else arr[0])
                     
                     update["$set"].update({
-                        'fewMinutesAt': datetime.utcnow(),
+                        'fewMinutesAt': datetime.now(timezone.utc).replace(tzinfo=None),
                     })
                     update.update({'$inc': {'countErrors': 1, 'countFewMinutes': 1}})
                 else:

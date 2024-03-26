@@ -3,7 +3,7 @@ from app.modules.worker.models.worker import Worker
 from typing import List,Iterable
 from app.common.types.paginate_options import PaginateOptions
 from app.common.types.id import ID
-from datetime import datetime
+from datetime import datetime,timezone
 from app.modules.config.services.config_service import ConfigService
 from app.modules.instagram.utilities.instagram_utility import InstagramUtility
 from app.modules.proxy.services.proxy_service import ProxyService
@@ -123,7 +123,7 @@ class WorkerService:
                         disable_few_minutes = int(arr[1]) if len(arr) > 1 else int(arr[0])
                     
                     update['$inc'] = {'countError': 1, 'countFewMinutes': 1}
-                    update["$set"]['fewMinutesAt'] = datetime.utcnow()
+                    update["$set"]['fewMinutesAt'] = datetime.now(timezone.utc).replace(tzinfo=None)
                 else:
                      update['$inc'] = {'countError': 1}
 
@@ -197,7 +197,7 @@ class WorkerService:
     def disable(self,username: str, reason: str = '')->Worker:
         try:
             print('disable', username)
-            date = datetime.utcnow()
+            date = datetime.now(timezone.utc).replace(tzinfo=None)
             update = {
                 '$set':{
                     'status': 0,

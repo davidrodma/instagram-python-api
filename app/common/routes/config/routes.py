@@ -48,6 +48,8 @@ class Routes:
 
         #Boost
         bp.add_url_rule('/boosts/disable', 'boosts_disable', BoostController.disable, methods=['POST'])
+        bp.add_url_rule('/boosts/disable-by-social-id', 'boosts_disable_by_social_id', BoostController.disable_by_social_id, methods=['POST'])
+        bp.add_url_rule('/boosts/active-by-social-id', 'boosts_active_by_social_id', BoostController.active_by_social_id, methods=['POST'])
         self.service.create_default_routes(bp,'boosts',BoostController)
 
         #Instagram - Scrape

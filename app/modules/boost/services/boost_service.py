@@ -3,7 +3,7 @@ from app.modules.boost.models.boost import Boost
 from typing import List,Iterable
 from app.common.types.paginate_options import PaginateOptions
 from app.common.types.id import ID
-from datetime import datetime
+from datetime import datetime,timezone
 from app.modules.config.services.config_service import ConfigService
 from app.modules.instagram.utilities.instagram_utility import InstagramUtility
 from app.modules.proxy.services.proxy_service import ProxyService
@@ -123,7 +123,7 @@ class BoostService:
                         disable_few_minutes = int(arr[2]) if len(arr) > 1 else int(arr[0])
                     
                     update['$inc'] = {'countError': 1, 'countFewMinutes': 1}
-                    update["$set"]['fewMinutesAt'] = datetime.utcnow()
+                    update["$set"]['fewMinutesAt'] = datetime.now(timezone.utc).replace(tzinfo=None)
                 else:
                      update['$inc'] = {'countError': 1}
 
@@ -195,7 +195,7 @@ class BoostService:
     def disable(self,username: str, reason: str = '')->Boost:
         try:
             print('disable', username)
-            date = datetime.utcnow()
+            date = datetime.now(timezone.utc).replace(tzinfo=None)
             update = {
                 '$set':{
                     'status': 0,
@@ -220,7 +220,60 @@ class BoostService:
             message_error = f'boost_service->disable: {e}'
             print('disable', message_error)
             raise Exception(message_error)
+    
+    @classmethod
+    def disable_by_social_id(self,socialId: str, reason: str = '')->Boost:
+        try:
+            print('disable', socialId)
+            date = datetime.now(timezone.utc).replace(tzinfo=None)
+            update = {
+                '$set':{
+                    'status': 0,
+                    'disabledAt': date,
+                    'pausedAtFollower': date,
+                    'pausedAtLike': date,
+                    'pausedAtComment': date
+                }
+            }
+            if reason:
+                expire_at = InstagramUtility.get_expire_at(reason)
+                update['$set'].update({
+                    'noteError': reason,
+                    'expireAt': expire_at
+                })
+                if InstagramUtility.is_blocked(reason):
+                    update.update({'$inc': {'countError': 1, 'countBlocked': 1 }})
+                else:
+                    update.update({'$inc': {'countError': 1}})
+            return self.find_one_and_update({'socialId': socialId}, update)
+        except Exception as e:
+            message_error = f'boost_service->disable_by_social_id: {e}'
+            print('disable', message_error)
+            raise Exception(message_error)
         
+    @classmethod
+    def active_by_social_id(self,socialId: str, reason: str = 'Perfil Ativado')->Boost:
+        try:
+            print('disable', socialId)
+            update = {
+                '$set':{
+                    "status": 1,
+                    "countCurrent": 0,
+                    "countSuccess": 0,
+                    "countFewMinutes": 0,
+                    "countError": 0,
+                    "countChallenge": 0,
+                    "countCurrentFollower": 0,
+                    "countCurrentLike": 0,
+                    "disabledAt": None,
+                    "noteError": reason
+                }
+            }         
+            return self.find_one_and_update({'socialId': socialId}, update)
+        except Exception as e:
+            message_error = f'boost_service->active_by_social_id: {e}'
+            print('disable', message_error)
+            raise Exception(message_error)     
 
     @classmethod
     def check_count_challenge(self,username: str, error: str = '', check_challenge: bool = False) -> Boost:

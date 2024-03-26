@@ -1,6 +1,4 @@
-# app/models/profile.py
-from datetime import datetime
-from typing import  Optional
+from datetime import datetime,timezone
 from pydantic import BaseModel
 
 class ProxyCreateDto(BaseModel):
@@ -14,7 +12,7 @@ class ProxyCreateDto(BaseModel):
     buyId:str = ""
     buyExpirationAt: datetime = None
     buyPeriod:int = 0
-    createdAt: datetime = datetime.utcnow()
+    createdAt: datetime = datetime.now(timezone.utc).replace(tzinfo=None)
     status:int = 1
     change:bool = False
     countChange:int = 0

@@ -1,5 +1,4 @@
-# app/models/worker.py
-from datetime import datetime
+from datetime import datetime,timezone
 from typing import  Optional
 from pydantic import BaseModel, validator
 from app.modules.config.services.config_service import ConfigService
@@ -12,7 +11,7 @@ class WorkerCreateDto(BaseModel):
     typeProxy:str = ''
     countryProxy:str = ''
     provider: Optional[str] = ''
-    createdAt: datetime = datetime.utcnow()
+    createdAt: datetime = datetime.now(timezone.utc).replace(tzinfo=None)
     status: int = 1
     groupType:str = ""
     provider:str = ""

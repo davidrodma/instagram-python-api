@@ -1,6 +1,6 @@
 from flask import request, jsonify
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta,timezone
 from ..config.public_routes import ROUTES_PUBLIC
 from dotenv import load_dotenv
 import os
@@ -16,7 +16,7 @@ class AuthMiddleware:
     def token_generator(self,user_id):
         payload = {
             'user_id': user_id,
-            'exp': datetime.utcnow() + timedelta(days=1)
+            'exp':  datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=1)
         }
         token = jwt.encode(payload, self.SECRET_KEY, algorithm='HS256')
         return token
