@@ -43,9 +43,11 @@ class Routes:
 
         #Workers
         bp.add_url_rule('/workers/create-many', 'workers_create_many', WorkerController.create_many, methods=['POST'])
+        bp.add_url_rule('/workers/disable', 'workers_disable', WorkerController.disable, methods=['POST'])
         self.service.create_default_routes(bp,'workers',WorkerController)
 
         #Boost
+        bp.add_url_rule('/boosts/disable', 'boosts_disable', BoostController.disable, methods=['POST'])
         self.service.create_default_routes(bp,'boosts',BoostController)
 
         #Instagram - Scrape

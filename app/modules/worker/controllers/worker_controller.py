@@ -9,6 +9,7 @@ from app.common.utilities.exception_utility import ExceptionUtility
 from app.modules.worker.services.worker_service import WorkerService
 from app.modules.worker.dto.worker_create_dto import WorkerCreateDto
 from app.modules.worker.dto.worker_update_dto import WorkerUpdateDto
+from app.modules.worker.dto.worker_disable_dto import WorkerDisableDto
 from app.modules.config.services.config_service import ConfigService
 
 class WorkerController(Controller):
@@ -82,3 +83,12 @@ class WorkerController(Controller):
             return jsonify({'message': f'{modified_count} records updated successfully','success': True})
         except Exception as e:
              return ExceptionUtility.catch_response(e,'Error Status')
+    
+    @classmethod
+    def disable(self):
+        try:
+            dto = WorkerDisableDto(**request.get_json())
+            obj = self.service.disable(dto.username, dto.reason)
+            return JSONEncoder().encode(obj) if obj else (jsonify({'error': 'Record not found'}), 404)
+        except Exception as e:
+             return ExceptionUtility.catch_response(e,'Error disable')

@@ -9,6 +9,7 @@ from app.common.utilities.exception_utility import ExceptionUtility
 from app.modules.boost.services.boost_service import BoostService
 from app.modules.boost.dto.boost_create_dto import BoostCreateDto
 from app.modules.boost.dto.boost_update_dto import BoostUpdateDto
+from app.modules.boost.dto.boost_disable_dto import BoostDisableDto
 from app.modules.config.services.config_service import ConfigService
 
 class BoostController(Controller):
@@ -82,3 +83,13 @@ class BoostController(Controller):
             return jsonify({'message': f'{modified_count} records updated successfully','success': True})
         except Exception as e:
              return ExceptionUtility.catch_response(e,'Error Status')
+        
+
+    @classmethod
+    def disable(self):
+        try:
+            dto = BoostDisableDto(**request.get_json())
+            obj = self.service.disable(dto.username, dto.reason)
+            return JSONEncoder().encode(obj) if obj else (jsonify({'error': 'Record not found'}), 404)
+        except Exception as e:
+             return ExceptionUtility.catch_response(e,'Error disable')

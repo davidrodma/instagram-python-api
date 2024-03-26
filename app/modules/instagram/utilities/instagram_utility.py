@@ -53,7 +53,7 @@ class InstagramUtility:
     
 
     @classmethod
-    def is_blocked(message_error: str) -> bool:
+    def is_blocked(self,message_error: str) -> bool:
         if (
             ("login" in message_error and any(x in message_error for x in ["been disabled", "not found", "username you entered", "challenge_required", "checkpoint_required"])) or
             "password" in message_error
