@@ -1,0 +1,12 @@
+asgiref==3.7.2
+colorama==0.4.6
+Faker==24.3.0
+Flask==3.0.2
+instagrapi==2.0.3
+Pillow==10.2.0
+pycryptodome==3.20.0
+pydantic==2.5.3
+PyJWT==2.8.0
+pymongo==4.6.2
+python-dotenv==1.0.1
+Requests==2.31.0
